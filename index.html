@@ -599,10 +599,17 @@ function handleValidate() {
   renderScore();
   renderWordPanel();
 
-  // After animation: free the cells
+  // After animation: free the cells — reset DOM explicitly to face-down blank
   setTimeout(() => {
-    ids.forEach(id => { state.grid[id] = emptyCell(id); });
-    renderGrid();
+    const container = document.getElementById("grid");
+    ids.forEach(id => {
+      state.grid[id] = emptyCell(id);
+      const el = container.children[id];
+      if (el) {
+        el.className = "card";                         // face-down, no revealed
+        el.querySelector(".card-face").textContent = ""; // clear letter
+      }
+    });
   }, 350);
 }
 
