@@ -120,7 +120,7 @@ body{display:flex;flex-direction:column;align-items:center;}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--felt-dark);border:1px solid var(--yellow-dim);border-radius:3px;font-size:12px;padding:9px 16px;color:var(--text);z-index:100;animation:toastIn .25s ease;pointer-events:none;white-space:nowrap;letter-spacing:.05em;}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
-.bonus-badge{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-title);font-size:clamp(36px,9vw,60px);font-weight:900;letter-spacing:.08em;color:var(--yellow);text-shadow:0 0 30px var(--yellow),0 2px 0 #c9a200;pointer-events:none;z-index:100;animation:badgePop .5s ease forwards;}
+.bonus-badge{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-title);font-size:clamp(36px,9vw,60px);font-weight:900;letter-spacing:.08em;color:var(--yellow);text-shadow:0 0 30px var(--yellow),0 2px 0 #c9a200;pointer-events:none;z-index:100;animation:badgePop 1.5s ease forwards;}
 @keyframes badgePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.1);}80%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(.9);}}
 </style>
 </head>
@@ -709,7 +709,7 @@ function showBonusBadge(text) {
   badgeEl.textContent = text;
   document.body.appendChild(badgeEl);
   if (state.bonusTimer) clearTimeout(state.bonusTimer);
-  state.bonusTimer = setTimeout(() => { if (badgeEl) { badgeEl.remove(); badgeEl = null; } }, 1500);
+  state.bonusTimer = setTimeout(() => { if (badgeEl) { badgeEl.remove(); badgeEl = null; } }, 2500);
 }
 
 document.getElementById("start-btn").addEventListener("click", startGame);
