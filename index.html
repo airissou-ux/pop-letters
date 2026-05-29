@@ -141,7 +141,8 @@ body{display:flex;flex-direction:column;align-items:center;}
 /* ── GRID ── */
 .grid-wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;margin-bottom:10px;}
 .card{aspect-ratio:1;cursor:pointer;perspective:700px;position:relative;}
-.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  transition:transform .4s cubic-bezier(.4,0,.2,1);}
 .card.revealed .card-inner{transform:rotateY(180deg);}
 .card-back,.card-face{
   position:absolute;inset:0;border-radius:3px;
@@ -175,11 +176,9 @@ body{display:flex;flex-direction:column;align-items:center;}
   border-color:var(--valid);color:#0a2a14;
   box-shadow:0 0 0 2px var(--valid),inset 0 1px 0 rgba(255,255,255,.5);}
 .card.gone .card-inner{opacity:0;transform:rotateY(180deg) scale(.75);transition:all .3s ease;}
-/* Carte révélée sans animation (remplacement après mot validé) */
-.card.no-flip{perspective:none;}
-.card.no-flip .card-inner{transform:none !important;transition:none !important;transform-style:flat;}
-.card.no-flip .card-back{display:none;}
-.card.no-flip .card-face{transform:none !important;position:relative;backface-visibility:visible;}
+.card.empty .card-back{opacity:0;}  /* case libérée : invisible jusqu'à la prochaine lettre */
+.card.empty .card-back{opacity:0;}  /* case libérée : invisible jusqu'à la prochaine lettre */
+
 
 /* ── INPUT ── */
 .input-area{width:100%;display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
@@ -600,11 +599,9 @@ function startGame() {
       return;
     }
     const idx = hidden[Math.floor(Math.random() * hidden.length)];
-    const wasFreed = !!state.grid[idx].justFreed;
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
-    state.grid[idx].justFreed = false;
-    revealCardOnDOM(idx, wasFreed);
+    revealCardOnDOM(idx);
     renderProgDots();
     // Check if now full
     if (state.grid.every(c => c.revealed)) {
@@ -715,19 +712,20 @@ function handleValidate() {
   renderScore();
   renderWordPanel();
 
-  // After animation: free the cells — reset to face-down, tag as justFreed
+  // After animation: free the cells — réapparition dos visible, sans flip
   setTimeout(() => {
     const container = document.getElementById("grid");
     ids.forEach(id => {
       state.grid[id] = emptyCell(id);
-      state.grid[id].justFreed = true;   // flag : prochaine révélation sans flip
       const el = container.children[id];
       if (el) {
-        el.style.transition = "none";
-        el.className = "card";
+        const inner = el.querySelector(".card-inner");
+        inner.style.transition = "none";   // couper la transition
+        inner.style.transform  = "";       // remettre à 0° instantanément
+        el.className = "card";             // dos visible, sans animation
         el.querySelector(".card-face").textContent = "";
-        void el.offsetWidth;
-        el.style.transition = "";
+        void inner.offsetWidth;            // forcer le reflow
+        inner.style.transition = "";       // prêt pour le prochain flip
       }
     });
   }, 350);
@@ -822,12 +820,12 @@ function renderGrid() {
       container.appendChild(el);
     }
 
-    // Build target class — préserver no-flip et revealed posés par revealCardOnDOM
-    const wasRevealed = el.className.includes("revealed") || el.className.includes("no-flip");
-    const wasNoFlip   = el.className.includes("no-flip");
+    // Ne jamais écraser revealed/empty posés par revealCardOnDOM ou free
+    const domRevealed = el.classList.contains("revealed");
+    const domEmpty    = el.classList.contains("empty");
     let cls = "card";
-    if (wasNoFlip)                       cls += " no-flip";
-    else if (cell.revealed || wasRevealed) cls += " revealed";
+    if (domEmpty)                        cls += " empty";
+    else if (cell.revealed || domRevealed) cls += " revealed";
     if (cell.selected) cls += " selected";
     if (cell.valid)    cls += " valid";
     if (cell.gone)     cls += " gone";
@@ -840,22 +838,32 @@ function renderGrid() {
 }
 
 // Reveal a single card with a one-shot CSS flip — called instead of renderGrid for new reveals
-function revealCardOnDOM(id, noFlip) {
+function revealCardOnDOM(id) {
   const container = document.getElementById("grid");
   const el = container.children[id];
   if (!el) return;
   const inner = el.querySelector(".card-inner");
   el.querySelector(".card-face").textContent = state.grid[id].letter || "";
-  if (noFlip) {
-    // Classe no-flip : désactive tout le mécanisme 3D, lettre visible directement
-    el.className = "card no-flip";
-  } else {
-    // Flip animé via CSS standard
+
+  const wasEmpty = el.classList.contains("empty");
+  if (wasEmpty) {
+    // Case libérée : déjà invisible, on part directement de 0° puis flip
+    // sans repasser par "card" (qui rendrait le dos visible)
     inner.style.transition = "none";
-    inner.style.transform = "";
+    inner.style.transform  = "rotateY(0deg)";
+    el.className = "card empty";   // garder empty pendant le reflow
+    void inner.offsetWidth;
+    inner.style.transition = "";
+    inner.style.transform  = "";
+    el.className = "card revealed"; // maintenant on flip (dos toujours caché par empty→revealed)
+  } else {
+    // Case vierge normale : flip depuis face-down visible
+    inner.style.transition = "none";
+    inner.style.transform  = "rotateY(0deg)";
     el.className = "card";
     void inner.offsetWidth;
-    inner.style.transition = "transform .4s cubic-bezier(.4,0,.2,1)";
+    inner.style.transition = "";
+    inner.style.transform  = "";
     el.className = "card revealed";
   }
 }
