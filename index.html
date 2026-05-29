@@ -101,8 +101,6 @@ body{display:flex;flex-direction:column;align-items:center;}
 .card.selected .card-face{background:#2a1f14;border-color:var(--ember);color:var(--ember2);box-shadow:0 0 12px #ff5e1a44;}
 .card.valid .card-face{background:#1a2a1a;border-color:var(--green);color:var(--green);box-shadow:0 0 12px #5ddb7a44;}
 .card.gone .card-inner{opacity:0;transform:rotateY(180deg) scale(.8);transition:all .35s ease;}
-.card.anim-in .card-inner{animation:cardIn .45s ease;}
-@keyframes cardIn{from{transform:rotateY(0deg) scale(.8);}to{transform:rotateY(180deg) scale(1);}}
 
 /* Input */
 .input-area{width:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
@@ -397,7 +395,7 @@ function calcBonus(wordList) {
 let state = {
   screen: "splash",
   diffIdx: 0,
-  grid: [],       // [{id, letter, revealed, selected, valid, gone, animIn}]
+  grid: [],       // [{id, letter, revealed, selected, valid, gone}]
   selection: [],  // cell ids
   wordList: [],
   score: 0,
@@ -445,7 +443,7 @@ function buildSplash() {
 // ═══════════════════════════════════════════════
 
 function emptyCell(id) {
-  return {id, letter:null, revealed:false, selected:false, valid:false, gone:false, animIn:false};
+  return {id, letter:null, revealed:false, selected:false, valid:false, gone:false};
 }
 
 function drawLetter() {
@@ -468,16 +466,15 @@ function startGame() {
   for (let i = 0; i < 5; i++) {
     state.grid[i].letter = drawLetter();
     state.grid[i].revealed = true;
-    state.grid[i].animIn = true;
   }
 
   renderGame();
   showScreen("game");
 
+  // Trigger one-shot flip on first 5 cards with staggered delay
   setTimeout(() => {
-    state.grid.forEach(c => c.animIn = false);
-    renderGrid();
-  }, 520);
+    for (let i = 0; i < 5; i++) revealCardOnDOM(i);
+  }, 50);
 
   // Start interval
   const ms = DIFFICULTY[state.diffIdx].ms;
@@ -491,10 +488,8 @@ function startGame() {
     }
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
-    state.grid[idx].animIn = true;
-    renderGrid();
+    revealCardOnDOM(idx);
     renderProgDots();
-    setTimeout(() => { state.grid[idx].animIn = false; renderGrid(); }, 520);
     // Check if now full
     if (state.grid.every(c => c.revealed)) {
       clearInterval(state.intervalId);
@@ -682,7 +677,6 @@ function renderWordPanel() {
 
 function renderGrid() {
   const container = document.getElementById("grid");
-  // Build or update cells
   state.grid.forEach((cell, i) => {
     let el = container.children[i];
     if (!el) {
@@ -701,18 +695,33 @@ function renderGrid() {
       container.appendChild(el);
     }
 
-    // Class list
+    // Build target class WITHOUT touching revealed (flip is one-shot via revealCardOnDOM)
+    const wasRevealed = el.className.includes("revealed");
     let cls = "card";
-    if (cell.revealed) cls += " revealed";
+    if (cell.revealed || wasRevealed) cls += " revealed";
     if (cell.selected) cls += " selected";
     if (cell.valid)    cls += " valid";
     if (cell.gone)     cls += " gone";
-    if (cell.animIn)   cls += " anim-in";
-    el.className = cls;
+    if (el.className !== cls) el.className = cls;
 
-    // Letter
-    el.querySelector(".card-face").textContent = cell.letter || "";
+    // Letter (only update if changed)
+    const face = el.querySelector(".card-face");
+    if (face.textContent !== (cell.letter || "")) face.textContent = cell.letter || "";
   });
+}
+
+// Reveal a single card with a one-shot CSS flip — called instead of renderGrid for new reveals
+function revealCardOnDOM(id) {
+  const container = document.getElementById("grid");
+  const el = container.children[id];
+  if (!el) return;
+  el.querySelector(".card-face").textContent = state.grid[id].letter || "";
+  // Reset to face-down without transition, then flip
+  el.style.transition = "none";
+  el.className = "card";
+  void el.offsetWidth; // force reflow
+  el.style.transition = "";
+  el.className = "card revealed";
 }
 
 function renderWordDisplay() {
