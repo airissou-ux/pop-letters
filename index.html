@@ -480,12 +480,13 @@ function startGame() {
   const ms = DIFFICULTY[state.diffIdx].ms;
   state.intervalId = setInterval(() => {
     if (state.screen !== "game") { clearInterval(state.intervalId); return; }
-    const idx = state.grid.findIndex(c => !c.revealed);
-    if (idx === -1) {
+    const hidden = state.grid.map((c,i) => (!c.revealed ? i : -1)).filter(i => i !== -1);
+    if (hidden.length === 0) {
       clearInterval(state.intervalId);
       triggerGameOver("grid_full");
       return;
     }
+    const idx = hidden[Math.floor(Math.random() * hidden.length)];
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
     revealCardOnDOM(idx);
