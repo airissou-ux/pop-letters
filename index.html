@@ -175,6 +175,11 @@ body{display:flex;flex-direction:column;align-items:center;}
   border-color:var(--valid);color:#0a2a14;
   box-shadow:0 0 0 2px var(--valid),inset 0 1px 0 rgba(255,255,255,.5);}
 .card.gone .card-inner{opacity:0;transform:rotateY(180deg) scale(.75);transition:all .3s ease;}
+/* Carte révélée sans animation (remplacement après mot validé) */
+.card.no-flip{perspective:none;}
+.card.no-flip .card-inner{transform:none !important;transition:none !important;transform-style:flat;}
+.card.no-flip .card-back{display:none;}
+.card.no-flip .card-face{transform:none !important;position:relative;backface-visibility:visible;}
 
 /* ── INPUT ── */
 .input-area{width:100%;display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
@@ -817,10 +822,12 @@ function renderGrid() {
       container.appendChild(el);
     }
 
-    // Build target class WITHOUT touching revealed (flip is one-shot via revealCardOnDOM)
-    const wasRevealed = el.className.includes("revealed");
+    // Build target class — préserver no-flip et revealed posés par revealCardOnDOM
+    const wasRevealed = el.className.includes("revealed") || el.className.includes("no-flip");
+    const wasNoFlip   = el.className.includes("no-flip");
     let cls = "card";
-    if (cell.revealed || wasRevealed) cls += " revealed";
+    if (wasNoFlip)                       cls += " no-flip";
+    else if (cell.revealed || wasRevealed) cls += " revealed";
     if (cell.selected) cls += " selected";
     if (cell.valid)    cls += " valid";
     if (cell.gone)     cls += " gone";
@@ -840,18 +847,15 @@ function revealCardOnDOM(id, noFlip) {
   const inner = el.querySelector(".card-inner");
   el.querySelector(".card-face").textContent = state.grid[id].letter || "";
   if (noFlip) {
-    // Apparition instantanée : pas de transition, on pose directement revealed
-    inner.style.transition = "none";
-    inner.style.transform = "rotateY(180deg)";
-    el.className = "card revealed";
+    // Classe no-flip : désactive tout le mécanisme 3D, lettre visible directement
+    el.className = "card no-flip";
   } else {
-    // Flip animé : reset à 0, puis transition + rotation
+    // Flip animé via CSS standard
     inner.style.transition = "none";
-    inner.style.transform = "rotateY(0deg)";
+    inner.style.transform = "";
     el.className = "card";
-    void inner.offsetWidth; // force reflow entre les deux états
+    void inner.offsetWidth;
     inner.style.transition = "transform .4s cubic-bezier(.4,0,.2,1)";
-    inner.style.transform = "rotateY(180deg)";
     el.className = "card revealed";
   }
 }
