@@ -596,9 +596,11 @@ function startGame() {
       return;
     }
     const idx = hidden[Math.floor(Math.random() * hidden.length)];
+    const wasFreed = !!state.grid[idx].justFreed;
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
-    revealCardOnDOM(idx);
+    state.grid[idx].justFreed = false;
+    revealCardOnDOM(idx, wasFreed);
     renderProgDots();
     // Check if now full
     if (state.grid.every(c => c.revealed)) {
@@ -709,19 +711,19 @@ function handleValidate() {
   renderScore();
   renderWordPanel();
 
-  // After animation: free the cells — reset to face-down, no flip
+  // After animation: free the cells — reset to face-down, tag as justFreed
   setTimeout(() => {
     const container = document.getElementById("grid");
     ids.forEach(id => {
       state.grid[id] = emptyCell(id);
+      state.grid[id].justFreed = true;   // flag : prochaine révélation sans flip
       const el = container.children[id];
       if (el) {
-        // Désactiver la transition le temps du reset pour éviter le flip parasite
         el.style.transition = "none";
         el.className = "card";
         el.querySelector(".card-face").textContent = "";
-        // Réactiver la transition au prochain frame
-        requestAnimationFrame(() => { el.style.transition = ""; });
+        void el.offsetWidth;
+        el.style.transition = "";
       }
     });
   }, 350);
@@ -832,17 +834,25 @@ function renderGrid() {
 }
 
 // Reveal a single card with a one-shot CSS flip — called instead of renderGrid for new reveals
-function revealCardOnDOM(id) {
+function revealCardOnDOM(id, noFlip) {
   const container = document.getElementById("grid");
   const el = container.children[id];
   if (!el) return;
   el.querySelector(".card-face").textContent = state.grid[id].letter || "";
-  // Reset to face-down without transition, then flip
-  el.style.transition = "none";
-  el.className = "card";
-  void el.offsetWidth; // force reflow
-  el.style.transition = "";
-  el.className = "card revealed";
+  if (noFlip) {
+    // Apparition directe sans animation
+    el.style.transition = "none";
+    el.className = "card revealed";
+    void el.offsetWidth;
+    el.style.transition = "";
+  } else {
+    // Flip normal : reset face-down puis flip
+    el.style.transition = "none";
+    el.className = "card";
+    void el.offsetWidth;
+    el.style.transition = "";
+    el.className = "card revealed";
+  }
 }
 
 function renderWordDisplay() {
