@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FIREWORDS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0e0b08;--surface:#1a1410;--surface2:#241c14;
+  --ember:#ff5e1a;--ember2:#ff8c00;--gold:#f0c040;
+  --green:#5ddb7a;--red:#ff4444;
+  --text:#f0e6d3;--dim:#7a6a58;--border:#3a2e20;
+}
+html,body{width:100%;min-height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden;}
+body{display:flex;flex-direction:column;align-items:center;}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:999;gap:20px;
+}
+.load-title{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:.1em;
+  background:linear-gradient(170deg,#fff5e0,#ff8c00 40%,#ff3d00 80%,#7a1a00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.load-bar-wrap{width:240px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.load-bar{height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--ember2));
+  border-radius:2px;transition:width .3s ease;}
+.load-msg{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
+#loading.hidden{display:none;}
+
+/* ── SCREENS ── */
+.screen{width:100%;max-width:480px;display:none;flex-direction:column;align-items:center;padding:0 12px 32px;}
+.screen.active{display:flex;}
+
+/* ── SPLASH ── */
+#splash{
+  min-height:100vh;justify-content:center;padding:0 24px 40px;
+  background:radial-gradient(ellipse 80% 50% at 50% 90%,#ff5e1a14,transparent 70%);
+}
+.splash-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,20vw,140px);
+  letter-spacing:.08em;line-height:1;margin-bottom:4px;
+  background:linear-gradient(170deg,#fff5e0,#ff8c00 40%,#ff3d00 80%,#7a1a00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px #ff5e1a66);
+  animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 0 30px #ff5e1a44);}50%{filter:drop-shadow(0 0 60px #ff8c0099);}}
+.splash-sub{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-bottom:44px;}
+.diff-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;}
+.diff-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+  padding:12px 18px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;width:100%;text-align:left;}
+.diff-btn:hover,.diff-btn.sel{border-color:var(--ember);background:#2a1f14;color:var(--ember2);}
+.diff-btn .spd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);}
+.diff-btn.sel .spd{color:var(--ember);}
+.start-btn{margin-top:28px;width:100%;max-width:300px;padding:16px;
+  background:linear-gradient(135deg,var(--ember),var(--ember2));border:none;border-radius:12px;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.15em;color:#fff;
+  cursor:pointer;transition:all .2s;box-shadow:0 4px 24px #ff5e1a44;}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px #ff5e1a77;}
+
+/* ── GAME ── */
+#game{padding:0 12px 32px;}
+.game-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 4px 10px;}
+.hd-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.1em;
+  background:linear-gradient(90deg,#ff8c00,#ff5e1a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hd-mistakes{display:flex;gap:6px;}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .3s;}
+.dot.used{background:var(--red);border-color:var(--red);box-shadow:0 0 8px var(--red);}
+.hd-score{text-align:right;}
+.score-lbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
+.score-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--gold);line-height:1;}
+
+/* Word panel */
+.word-panel{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;}
+.word-tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.word-tabs::-webkit-scrollbar{display:none;}
+.word-tab{flex:0 0 auto;padding:8px 14px;font-size:11px;font-weight:600;letter-spacing:.08em;
+  color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
+.word-tab.active{color:var(--ember2);border-bottom-color:var(--ember);}
+.tab-count{background:var(--ember);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-weight:700;}
+.word-list{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;min-height:52px;align-content:flex-start;}
+.word-chip{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;
+  color:var(--ember2);letter-spacing:.05em;}
+.word-empty{color:var(--dim);font-size:12px;margin:auto;}
+
+/* Grid */
+.grid-wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;margin-bottom:12px;}
+.card{aspect-ratio:1;cursor:pointer;perspective:600px;position:relative;}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);}
+.card.revealed .card-inner{transform:rotateY(180deg);}
+.card-back,.card-face{position:absolute;inset:0;border-radius:10px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;}
+.card-back{background:var(--surface2);border:1px solid var(--border);}
+.card-back::after{content:'';width:40%;height:40%;border-radius:50%;background:radial-gradient(circle,#ffffff08,transparent);}
+.card-face{background:var(--surface);border:1px solid var(--border);
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(20px,5vw,28px);letter-spacing:.05em;color:var(--text);
+  transform:rotateY(180deg);}
+.card.selected .card-face{background:#2a1f14;border-color:var(--ember);color:var(--ember2);box-shadow:0 0 12px #ff5e1a44;}
+.card.valid .card-face{background:#1a2a1a;border-color:var(--green);color:var(--green);box-shadow:0 0 12px #5ddb7a44;}
+.card.gone .card-inner{opacity:0;transform:rotateY(180deg) scale(.8);transition:all .35s ease;}
+.card.anim-in .card-inner{animation:cardIn .45s ease;}
+@keyframes cardIn{from{transform:rotateY(0deg) scale(.8);}to{transform:rotateY(180deg) scale(1);}}
+
+/* Input */
+.input-area{width:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.word-display{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;
+  letter-spacing:.15em;min-height:54px;display:flex;align-items:center;transition:all .2s;}
+.word-display.typing{border-color:#5a4030;color:var(--ember2);}
+.word-display.valid{border-color:var(--green);color:var(--green);box-shadow:0 0 16px #5ddb7a22;}
+.word-display.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+.word-placeholder{color:var(--dim);font-size:13px;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:.05em;}
+.input-actions{display:flex;gap:8px;}
+.btn-clear{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--dim);font-size:16px;padding:0 18px;cursor:pointer;transition:all .2s;flex:0 0 auto;}
+.btn-clear:hover{border-color:var(--ember);color:var(--text);}
+.btn-validate{flex:1;padding:14px;border:none;border-radius:10px;
+  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.15em;cursor:pointer;
+  background:var(--surface2);color:var(--dim);transition:all .2s;}
+.btn-validate.active{background:linear-gradient(135deg,var(--green),#3ab558);color:#fff;box-shadow:0 4px 20px #5ddb7a33;}
+.btn-validate:disabled{cursor:default;}
+
+/* Bottom bar */
+.bottom-bar{width:100%;display:flex;align-items:center;justify-content:space-between;padding:4px 2px;}
+.diff-indicator{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);}
+.prog-dots{display:flex;gap:3px;}
+.prog-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .3s;}
+.prog-dot.on{background:var(--ember);box-shadow:0 0 6px var(--ember);}
+.btn-menu{background:none;border:1px solid var(--border);border-radius:8px;
+  color:var(--dim);font-size:11px;padding:5px 10px;cursor:pointer;transition:all .2s;letter-spacing:.05em;}
+.btn-menu:hover{border-color:var(--ember);color:var(--text);}
+
+/* ── GAME OVER ── */
+#gameover{min-height:100vh;justify-content:center;padding:24px;}
+.go-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,12vw,72px);letter-spacing:.08em;
+  background:linear-gradient(90deg,#ff8c00,#ff5e1a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.go-sub{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-top:4px;margin-bottom:8px;}
+.go-score{font-family:'JetBrains Mono',monospace;font-size:64px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:20px;}
+.go-words{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;}
+.go-words-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.go-words-list{display:flex;flex-wrap:wrap;gap:6px;}
+.go-chip{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;color:var(--ember2);}
+.go-bonus{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;}
+.go-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:var(--dim);}
+.go-row:not(:last-child){border-bottom:1px solid var(--border);}
+.go-val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--ember2);}
+.go-replay{width:100%;padding:16px;background:linear-gradient(135deg,var(--ember),var(--ember2));
+  border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.15em;
+  color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 4px 24px #ff5e1a44;margin-bottom:8px;}
+.go-replay:hover{transform:translateY(-2px);box-shadow:0 8px 32px #ff5e1a77;}
+.btn-back{background:none;border:1px solid var(--border);border-radius:10px;color:var(--dim);
+  font-size:13px;padding:10px 20px;cursor:pointer;transition:all .2s;width:100%;}
+.btn-back:hover{border-color:var(--ember);color:var(--text);}
+
+/* Toast & Badge */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:#2a1f14;border:1px solid var(--ember);border-radius:10px;
+  font-size:13px;padding:10px 18px;color:var(--text);z-index:100;
+  animation:toastIn .25s ease;pointer-events:none;white-space:nowrap;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.bonus-badge{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,8vw,56px);letter-spacing:.1em;
+  color:var(--gold);text-shadow:0 0 40px var(--gold);pointer-events:none;z-index:100;
+  animation:badgePop .5s ease forwards;}
+@keyframes badgePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.1);}80%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(.9);}}
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="load-title">FIREWORDS</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+  <div class="load-msg" id="load-msg">Chargement du dictionnaire…</div>
+</div>
+
+<!-- Splash -->
+<div class="screen" id="splash">
+  <div class="splash-title">FIREWORDS</div>
+  <div class="splash-sub">Jeu de mots en feu</div>
+  <div class="diff-list" id="diff-list"></div>
+  <button class="start-btn" id="start-btn">COMMENCER</button>
+</div>
+
+<!-- Game -->
+<div class="screen" id="game">
+  <div class="game-header" style="width:100%">
+    <div class="hd-title">FIREWORDS</div>
+    <div class="hd-mistakes" id="mistakes"></div>
+    <div class="hd-score">
+      <div class="score-lbl">Score</div>
+      <div class="score-val" id="score-val">0</div>
+    </div>
+  </div>
+  <div class="word-panel">
+    <div class="word-tabs" id="word-tabs"></div>
+    <div class="word-list" id="word-list"></div>
+  </div>
+  <div class="grid-wrap" id="grid"></div>
+  <div class="input-area">
+    <div class="word-display" id="word-display">
+      <span class="word-placeholder" id="word-placeholder">Sélectionnez des lettres…</span>
+    </div>
+    <div class="input-actions">
+      <button class="btn-clear" id="btn-clear">✕</button>
+      <button class="btn-validate" id="btn-validate" disabled>VALIDER</button>
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="diff-indicator">
+      <span id="diff-icon">🌱</span>
+      <span id="diff-name">Débutant</span>
+    </div>
+    <div class="prog-dots" id="prog-dots"></div>
+    <button class="btn-menu" id="btn-menu">⚙ Menu</button>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div class="screen" id="gameover">
+  <div class="go-title" id="go-title">GRILLE PLEINE</div>
+  <div class="go-sub">score final</div>
+  <div class="go-score" id="go-score">0</div>
+  <div class="go-words">
+    <div class="go-words-title" id="go-words-title">0 mot trouvé</div>
+    <div class="go-words-list" id="go-words-list"></div>
+  </div>
+  <div class="go-bonus" id="go-bonus"></div>
+  <button class="go-replay" id="go-replay">REJOUER</button>
+  <button class="btn-back" id="btn-back">← Changer de niveau</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIGURATION
+// ═══════════════════════════════════════════════
+
+const DICT_URL = "https://raw.githubusercontent.com/lorenbrichter/Words/master/Words/fr.txt";
+
+const LETTER_POOL = [
+  ...Array(9).fill("A"), ...Array(2).fill("B"), ...Array(2).fill("C"),
+  ...Array(3).fill("D"), ...Array(15).fill("E"), ...Array(2).fill("F"),
+  ...Array(2).fill("G"), ...Array(2).fill("H"), ...Array(8).fill("I"),
+  ...Array(1).fill("J"), ...Array(1).fill("K"), ...Array(5).fill("L"),
+  ...Array(3).fill("M"), ...Array(6).fill("N"), ...Array(6).fill("O"),
+  ...Array(2).fill("P"), ...Array(1).fill("Q"), ...Array(6).fill("R"),
+  ...Array(6).fill("S"), ...Array(6).fill("T"), ...Array(6).fill("U"),
+  ...Array(2).fill("V"), ...Array(1).fill("W"), ...Array(1).fill("X"),
+  ...Array(1).fill("Y"), ...Array(1).fill("Z"),
+];
+
+const DIFFICULTY = [
+  { label:"Débutant",      icon:"🌱", ms:5000 },
+  { label:"Intermédiaire", icon:"✌️",  ms:4000 },
+  { label:"Fort",          icon:"🏆", ms:3000 },
+  { label:"Expert",        icon:"🤓", ms:2000 },
+  { label:"Diabolique",    icon:"😈", ms:1000 },
+];
+
+const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
+
+// ═══════════════════════════════════════════════
+// DICTIONARY
+// ═══════════════════════════════════════════════
+
+let DICT = new Set();
+
+function deaccent(s) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+}
+
+async function loadDictionary() {
+  const bar = document.getElementById("load-bar");
+  const msg = document.getElementById("load-msg");
+
+  try {
+    msg.textContent = "Connexion au dictionnaire ODS…";
+    bar.style.width = "10%";
+
+    const resp = await fetch(DICT_URL);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+    bar.style.width = "40%";
+    msg.textContent = "Téléchargement en cours…";
+
+    const text = await resp.text();
+
+    bar.style.width = "70%";
+    msg.textContent = "Construction du dictionnaire…";
+
+    const lines = text.split("\n");
+    for (const line of lines) {
+      const w = line.trim();
+      if (!w) continue;
+      // keep only pure letter chars, 5-15 length
+      const clean = deaccent(w).replace(/[^A-Z]/g, "");
+      if (clean.length >= 5 && clean.length <= 15) {
+        DICT.add(clean);
+      }
+    }
+
+    bar.style.width = "100%";
+    msg.textContent = `${DICT.size.toLocaleString()} mots chargés ✓`;
+    await sleep(400);
+
+    document.getElementById("loading").classList.add("hidden");
+    showScreen("splash");
+
+  } catch(err) {
+    msg.textContent = "Hors ligne — dictionnaire de secours chargé";
+    bar.style.width = "100%";
+    // Load fallback embedded dictionary
+    loadFallback();
+    await sleep(800);
+    document.getElementById("loading").classList.add("hidden");
+    showScreen("splash");
+  }
+}
+
+function loadFallback() {
+  // Fallback: words from our existing compressed dict
+  const _ENC = "0ABAISSA|7BLE|10S|7I|8ENT|11S|8S|8T|9S|7MES|7NT|9E|10S|9S|7S|8SE|10NT|12S|10S|9IEZ|10ONS|7TES|6E|7E|8S|7MENT|11S|7NT|9S|7R|8A|9I|10ENT|13S|10S|10T|11S|9S|8ENT|11S|9Z|8IEZ|9ONS|8ONS|10T|11S|8S|7S|7Z|6IEZ|7ONS|6ONS";
+  // (abbreviated fallback — real words loaded above from fr.txt normally)
+  // Add common French words manually as baseline
+  const basics = `
+ABAISSER ABATTRE ABRITER ACCEDER ACHETER AJOUTER ALLER ALLUMER AIMER AIMER
+AMENER AMUSER APPELER APPORTER ARRETER ARRIVER ASSURER ATTEINDRE ATTENDRE
+BAISSER BALADE BALLADE BATTRE BLESSER BOIRE BRILLER BRISER BRUSQUE
+CASSER CHANTER CHERCHER CLAQUER COLLER COMPTER COUPER COURIR COUVRIR CROIRE
+DANSER DECOUVRIR DEMANDER DEPART DONNER DORMIR DRESSER DURER
+ECOUTER ECRIRE ENTRER ESPERER ESSAYER ETUDIER EVITER EXISTER
+FACHER FAIRE FALLOIR FERMER FINIR FLOTTER FORMER FRAPPER FROTTER
+GAGNER GARDER GLISSER GRANDIR GROSSIR GRUGER
+HABITER HAUSSER HURLER
+IMAGINER IMITER IMPOSER
+JOUER JETER JUGER
+LANCER LAISSER LEVER LIBERER LUTTER
+MARCHER MENTIR METTRE MONTER MOURIR MUNIR
+NOMMER NOTER NOURRIR
+OBTENIR OUVRIR OBSERVER
+PARLER PARTIR PASSER PENSER PERDRE PLAIRE PLIER PORTER POSER POUSSER PRENDRE PRESENTER PROMETTRE PROTEGER POUVOIR
+RANGER RATER REFUSER RELIER RENDRE RENTRER RESTER RETIRER REVENIR ROMPRE
+SAVOIR SEMBLER SERVIR SORTIR SOUFFRIR SUBIR SUFFIRE SUIVRE
+TENDRE TERMINER TENIR TIRER TOMBER TOUCHER TROUVER TUER
+UTILISER
+VALOIR VENDRE VENIR VIVRE VOIR VOLER
+FRANGE PLEUT MORDE MORDES MORDRE MORDS TOUTE TOURTE CHOUETTE PHOTO TABLE PIANO
+SURFER PARLER CHANTER SKIER MIXER SKINHEAD
+TABLE CHAISE FLEUR ARBRE MAISON JARDIN VOITURE ENFANT AMOUR MONDE
+PARTIR VOULOIR POUVOIR SAVOIR VENIR TENIR COURIR MOURIR SORTIR
+`.trim().split(/\s+/);
+  for (const w of basics) {
+    if (w.length >= 5 && w.length <= 15) DICT.add(w.toUpperCase());
+  }
+}
+
+function checkWord(word) {
+  return DICT.has(word.toUpperCase());
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function calcBonus(wordList) {
+  const cnt = {5:0,6:0,7:0,8:0,9:0,10:0};
+  wordList.forEach(w => { const l=Math.min(w.length,10); cnt[l>=10?10:l]++; });
+  let len = 0;
+  len += cnt[6]*1; len += cnt[7]*2; len += cnt[8]*3; len += cnt[9]*5; len += cnt[10]*10;
+  let fig = 0, figLabel = null;
+  if (cnt[6]>=1&&cnt[7]>=1&&cnt[8]>=1&&cnt[9]>=1&&cnt[10]>=1) { fig=75; figLabel="QUINTE FLUSH !"; }
+  else if (cnt[5]>=1&&cnt[6]>=1&&cnt[7]>=1&&cnt[8]>=1&&cnt[9]>=1) { fig=50; figLabel="QUINTE !"; }
+  else if (cnt[5]>=1&&cnt[6]>=1&&cnt[7]>=1&&cnt[8]>=1) { fig=25; figLabel="QUARTE !"; }
+  return {len, fig, figLabel};
+}
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  screen: "splash",
+  diffIdx: 0,
+  grid: [],       // [{id, letter, revealed, selected, valid, gone, animIn}]
+  selection: [],  // cell ids
+  wordList: [],
+  score: 0,
+  mistakes: 0,
+  activeTab: 0,
+  intervalId: null,
+  toastTimer: null,
+  bonusTimer: null,
+  deck: [],
+};
+
+// ═══════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════
+
+function showScreen(name) {
+  state.screen = name;
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  const el = document.getElementById(name);
+  if (el) el.classList.add("active");
+}
+
+// ═══════════════════════════════════════════════
+// SPLASH SETUP
+// ═══════════════════════════════════════════════
+
+function buildSplash() {
+  const list = document.getElementById("diff-list");
+  list.innerHTML = "";
+  DIFFICULTY.forEach((d, i) => {
+    const btn = document.createElement("button");
+    btn.className = "diff-btn" + (i===state.diffIdx?" sel":"");
+    btn.innerHTML = `<span>${d.icon}</span><span>${d.label}</span><span class="spd">1 carte / ${d.ms/1000}s</span>`;
+    btn.onclick = () => {
+      state.diffIdx = i;
+      document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("sel"));
+      btn.classList.add("sel");
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════════════
+
+function emptyCell(id) {
+  return {id, letter:null, revealed:false, selected:false, valid:false, gone:false, animIn:false};
+}
+
+function drawLetter() {
+  if (state.deck.length === 0) state.deck = shuffle([...LETTER_POOL]);
+  return state.deck.shift();
+}
+
+function startGame() {
+  if (state.intervalId) clearInterval(state.intervalId);
+
+  state.deck = shuffle([...LETTER_POOL]);
+  state.grid = Array.from({length:20},(_,i) => emptyCell(i));
+  state.selection = [];
+  state.wordList = [];
+  state.score = 0;
+  state.mistakes = 0;
+  state.activeTab = 0;
+
+  // Deal first 5 cards
+  for (let i = 0; i < 5; i++) {
+    state.grid[i].letter = drawLetter();
+    state.grid[i].revealed = true;
+    state.grid[i].animIn = true;
+  }
+
+  renderGame();
+  showScreen("game");
+
+  setTimeout(() => {
+    state.grid.forEach(c => c.animIn = false);
+    renderGrid();
+  }, 520);
+
+  // Start interval
+  const ms = DIFFICULTY[state.diffIdx].ms;
+  state.intervalId = setInterval(() => {
+    if (state.screen !== "game") { clearInterval(state.intervalId); return; }
+    const idx = state.grid.findIndex(c => !c.revealed);
+    if (idx === -1) {
+      clearInterval(state.intervalId);
+      triggerGameOver("grid_full");
+      return;
+    }
+    state.grid[idx].letter = drawLetter();
+    state.grid[idx].revealed = true;
+    state.grid[idx].animIn = true;
+    renderGrid();
+    renderProgDots();
+    setTimeout(() => { state.grid[idx].animIn = false; renderGrid(); }, 520);
+    // Check if now full
+    if (state.grid.every(c => c.revealed)) {
+      clearInterval(state.intervalId);
+      setTimeout(() => triggerGameOver("grid_full"), 500);
+    }
+  }, ms);
+}
+
+function triggerGameOver(reason) {
+  if (state.intervalId) clearInterval(state.intervalId);
+  state.screen = "gameover";
+  renderGameOver(reason);
+  showScreen("gameover");
+}
+
+function handleCellClick(id) {
+  const cell = state.grid[id];
+  if (!cell || !cell.revealed || cell.gone) return;
+
+  const sel = state.selection;
+  let newSel;
+
+  if (sel.includes(id)) {
+    if (sel[sel.length-1] !== id) return; // can only deselect last
+    newSel = sel.slice(0, -1);
+  } else {
+    newSel = [...sel, id];
+  }
+
+  state.selection = newSel;
+
+  // Update grid visual state
+  state.grid.forEach(c => { c.selected = newSel.includes(c.id); c.valid = false; });
+
+  // Check validity if ≥ 5 letters
+  if (newSel.length >= 5) {
+    const word = newSel.map(id => state.grid[id].letter).join("");
+    if (checkWord(word)) {
+      newSel.forEach(id => { state.grid[id].valid = true; });
+    }
+  }
+
+  renderGrid();
+  renderWordDisplay();
+  renderValidateBtn();
+}
+
+function clearSelection() {
+  state.selection = [];
+  state.grid.forEach(c => { c.selected = false; c.valid = false; });
+  renderGrid();
+  renderWordDisplay();
+  renderValidateBtn();
+}
+
+function handleValidate() {
+  const sel = state.selection;
+  if (sel.length < 5) return;
+  const word = sel.map(id => state.grid[id].letter).join("");
+  if (!checkWord(word)) {
+    showToast(`"${word}" absent du dictionnaire`);
+    // shake
+    const wd = document.getElementById("word-display");
+    wd.classList.add("shake");
+    setTimeout(() => wd.classList.remove("shake"), 400);
+    return;
+  }
+
+  // Duplicate check
+  if (state.wordList.includes(word)) {
+    showToast(`"${word}" déjà dans la liste !`);
+    state.mistakes++;
+    if (state.mistakes >= 3) {
+      setTimeout(() => triggerGameOver("mistakes"), 500);
+    }
+    renderMistakes();
+    const wd = document.getElementById("word-display");
+    wd.classList.add("shake");
+    setTimeout(() => { wd.classList.remove("shake"); clearSelection(); }, 700);
+    return;
+  }
+
+  // Accept word
+  const ids = [...sel];
+  const prevList = [...state.wordList];
+  state.wordList.push(word);
+  state.score += word.length;
+
+  // Figure bonus?
+  const pb = calcBonus(prevList);
+  const nb = calcBonus(state.wordList);
+  if (nb.fig > pb.fig && nb.figLabel) {
+    state.score += (nb.fig - pb.fig);
+    showBonusBadge(nb.figLabel);
+  }
+
+  // Switch to matching tab
+  const l = word.length;
+  state.activeTab = l>=10?5 : l>=9?4 : l>=8?3 : l>=7?2 : l>=6?1 : 0;
+
+  // Animate cells out
+  ids.forEach(id => { state.grid[id].gone = true; state.grid[id].selected = false; state.grid[id].valid = false; });
+  state.selection = [];
+  renderGrid();
+  renderWordDisplay();
+  renderValidateBtn();
+  renderScore();
+  renderWordPanel();
+
+  // After animation: free the cells
+  setTimeout(() => {
+    ids.forEach(id => { state.grid[id] = emptyCell(id); });
+    renderGrid();
+  }, 350);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+
+function renderGame() {
+  const d = DIFFICULTY[state.diffIdx];
+  document.getElementById("diff-icon").textContent = d.icon;
+  document.getElementById("diff-name").textContent = d.label;
+  renderMistakes();
+  renderScore();
+  renderWordPanel();
+  renderGrid();
+  renderWordDisplay();
+  renderValidateBtn();
+  renderProgDots();
+}
+
+function renderMistakes() {
+  const el = document.getElementById("mistakes");
+  el.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const d = document.createElement("div");
+    d.className = "dot" + (i < state.mistakes ? " used" : "");
+    el.appendChild(d);
+  }
+}
+
+function renderScore() {
+  document.getElementById("score-val").textContent = state.score;
+}
+
+function renderWordPanel() {
+  // Tabs
+  const tabs = document.getElementById("word-tabs");
+  tabs.innerHTML = "";
+  const wordsByLen = [5,6,7,8,9,10].map(l => state.wordList.filter(w => l===10 ? w.length>=10 : w.length===l));
+  TAB_LABELS.forEach((lbl, i) => {
+    const t = document.createElement("div");
+    t.className = "word-tab" + (i===state.activeTab ? " active" : "");
+    t.textContent = lbl;
+    if (wordsByLen[i].length > 0) {
+      const badge = document.createElement("span");
+      badge.className = "tab-count";
+      badge.textContent = wordsByLen[i].length;
+      t.appendChild(badge);
+    }
+    t.onclick = () => { state.activeTab = i; renderWordPanel(); };
+    tabs.appendChild(t);
+  });
+
+  // Word list
+  const list = document.getElementById("word-list");
+  list.innerHTML = "";
+  const words = wordsByLen[state.activeTab];
+  if (words.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "word-empty";
+    empty.textContent = "— aucun mot —";
+    list.appendChild(empty);
+  } else {
+    words.forEach(w => {
+      const chip = document.createElement("div");
+      chip.className = "word-chip";
+      chip.textContent = w;
+      list.appendChild(chip);
+    });
+  }
+}
+
+function renderGrid() {
+  const container = document.getElementById("grid");
+  // Build or update cells
+  state.grid.forEach((cell, i) => {
+    let el = container.children[i];
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "card";
+      const inner = document.createElement("div");
+      inner.className = "card-inner";
+      const back = document.createElement("div");
+      back.className = "card-back";
+      const face = document.createElement("div");
+      face.className = "card-face";
+      inner.appendChild(back);
+      inner.appendChild(face);
+      el.appendChild(inner);
+      el.addEventListener("click", () => handleCellClick(cell.id));
+      container.appendChild(el);
+    }
+
+    // Class list
+    let cls = "card";
+    if (cell.revealed) cls += " revealed";
+    if (cell.selected) cls += " selected";
+    if (cell.valid)    cls += " valid";
+    if (cell.gone)     cls += " gone";
+    if (cell.animIn)   cls += " anim-in";
+    el.className = cls;
+
+    // Letter
+    el.querySelector(".card-face").textContent = cell.letter || "";
+  });
+}
+
+function renderWordDisplay() {
+  const sel = state.selection;
+  const word = sel.map(id => state.grid[id]?.letter || "").join("");
+  const wd = document.getElementById("word-display");
+  const ph = document.getElementById("word-placeholder");
+
+  if (word.length === 0) {
+    wd.className = "word-display";
+    wd.textContent = "";
+    const placeholder = document.createElement("span");
+    placeholder.className = "word-placeholder";
+    placeholder.id = "word-placeholder";
+    placeholder.textContent = "Sélectionnez des lettres…";
+    wd.appendChild(placeholder);
+  } else {
+    wd.innerHTML = "";
+    const isValid = sel.length >= 5 && state.grid[sel[0]]?.valid;
+    wd.className = "word-display" + (isValid ? " valid" : sel.length > 0 ? " typing" : "");
+    wd.textContent = word;
+  }
+}
+
+function renderValidateBtn() {
+  const btn = document.getElementById("btn-validate");
+  const sel = state.selection;
+  const word = sel.map(id => state.grid[id]?.letter || "").join("");
+  const isValid = sel.length >= 5 && checkWord(word);
+  btn.disabled = !isValid;
+  btn.className = "btn-validate" + (isValid ? " active" : "");
+  btn.textContent = isValid ? "✓ VALIDER" : "VALIDER";
+}
+
+function renderProgDots() {
+  const el = document.getElementById("prog-dots");
+  el.innerHTML = "";
+  const revealed = state.grid.filter(c => c.revealed).length;
+  for (let i = 0; i < 10; i++) {
+    const d = document.createElement("div");
+    d.className = "prog-dot" + (i < Math.ceil(revealed/2) ? " on" : "");
+    el.appendChild(d);
+  }
+}
+
+function renderGameOver(reason) {
+  const wordList = state.wordList;
+  const {len, fig, figLabel} = calcBonus(wordList);
+  const base = wordList.reduce((s,w) => s+w.length, 0);
+  const total = base + len + fig;
+
+  document.getElementById("go-title").textContent = reason==="mistakes" ? "3 FAUTES !" : "GRILLE PLEINE";
+  document.getElementById("go-score").textContent = total;
+
+  // Words
+  const wt = document.getElementById("go-words-title");
+  wt.textContent = `${wordList.length} mot${wordList.length!==1?"s":""} trouvé${wordList.length!==1?"s":""}`;
+  const wl = document.getElementById("go-words-list");
+  wl.innerHTML = "";
+  if (wordList.length === 0) {
+    const empty = document.createElement("span");
+    empty.style.cssText = "color:var(--dim);font-size:12px";
+    empty.textContent = "Aucun mot validé";
+    wl.appendChild(empty);
+  } else {
+    wordList.forEach(w => {
+      const chip = document.createElement("div");
+      chip.className = "go-chip";
+      chip.textContent = w;
+      wl.appendChild(chip);
+    });
+  }
+
+  // Bonus breakdown
+  const gb = document.getElementById("go-bonus");
+  gb.innerHTML = `
+    <div class="go-row"><span>Lettres collectées</span><span class="go-val">${base} pts</span></div>
+    <div class="go-row"><span>Bonus longueur</span><span class="go-val">+${len} pts</span></div>
+    ${fig>0 ? `<div class="go-row"><span>${figLabel}</span><span class="go-val">+${fig} pts</span></div>` : ""}
+    <div class="go-row" style="border-bottom:none;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+      <span style="font-weight:700;color:var(--text)">TOTAL</span>
+      <span class="go-val" style="font-size:18px">${total} pts</span>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// TOAST & BADGE
+// ═══════════════════════════════════════════════
+
+let toastEl = null;
+function showToast(msg) {
+  if (toastEl) toastEl.remove();
+  toastEl = document.createElement("div");
+  toastEl.className = "toast";
+  toastEl.textContent = msg;
+  document.body.appendChild(toastEl);
+  if (state.toastTimer) clearTimeout(state.toastTimer);
+  state.toastTimer = setTimeout(() => { if (toastEl) { toastEl.remove(); toastEl = null; } }, 1800);
+}
+
+let badgeEl = null;
+function showBonusBadge(text) {
+  if (badgeEl) badgeEl.remove();
+  badgeEl = document.createElement("div");
+  badgeEl.className = "bonus-badge";
+  badgeEl.textContent = text;
+  document.body.appendChild(badgeEl);
+  if (state.bonusTimer) clearTimeout(state.bonusTimer);
+  state.bonusTimer = setTimeout(() => { if (badgeEl) { badgeEl.remove(); badgeEl = null; } }, 1500);
+}
+
+// ═══════════════════════════════════════════════
+// EVENT LISTENERS
+// ═══════════════════════════════════════════════
+
+document.getElementById("start-btn").addEventListener("click", startGame);
+document.getElementById("btn-clear").addEventListener("click", clearSelection);
+document.getElementById("btn-validate").addEventListener("click", handleValidate);
+document.getElementById("btn-menu").addEventListener("click", () => {
+  if (state.intervalId) clearInterval(state.intervalId);
+  buildSplash();
+  showScreen("splash");
+});
+document.getElementById("go-replay").addEventListener("click", startGame);
+document.getElementById("btn-back").addEventListener("click", () => {
+  buildSplash();
+  showScreen("splash");
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+buildSplash();
+loadDictionary();
+
+</script>
+</body>
+</html>
