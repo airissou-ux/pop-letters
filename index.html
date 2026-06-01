@@ -145,6 +145,8 @@ body{display:flex;flex-direction:column;align-items:center;}
 /* Bouton aide dans bottom-bar */
 .btn-help{background:rgba(0,0,0,.2);border:1px solid rgba(245,200,0,.2);border-radius:50%;color:var(--yellow-dim);font-size:13px;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
 .btn-help:hover{border-color:var(--yellow);color:var(--yellow);}
+.tuto-link{background:none;border:none;color:var(--yellow-dim);font-family:var(--font-ui);font-size:12px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;margin-top:10px;padding:6px;text-decoration:underline;text-underline-offset:3px;transition:color .2s;}
+.tuto-link:hover{color:var(--yellow);}
 </style>
 </head>
 <body>
@@ -162,6 +164,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <div class="felt-divider"></div>
     <div class="diff-list" id="diff-list"></div>
     <button class="start-btn" id="start-btn">COMMENCER</button>
+    <button class="tuto-link" id="btn-help-splash">? Règles du jeu</button>
   </div>
 </div>
 
@@ -274,11 +277,11 @@ const LETTER_POOL = [
 ];
 
 const DIFFICULTY = [
-  { label:"Débutant",      icon:"🌱", ms:5000 },
-  { label:"Intermédiaire", icon:"✌️",  ms:4000 },
-  { label:"Fort",          icon:"🏆", ms:3000 },
-  { label:"Expert",        icon:"🤓", ms:2000 },
-  { label:"Diabolique",    icon:"😈", ms:1000 },
+  { label:"Débutant",      icon:"🦥", ms:5000 },
+  { label:"Intermédiaire", icon:"🐢", ms:4000 },
+  { label:"Fort",          icon:"🐟", ms:3000 },
+  { label:"Expert",        icon:"🐇", ms:2000 },
+  { label:"Diabolique",    icon:"🦅", ms:1000 },
 ];
 
 const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
@@ -309,7 +312,34 @@ async function loadDictionary() {
       const clean = deaccent(w).replace(/[^A-Z]/g, "");
       if (clean.length >= 5 && clean.length <= 15) DICT.add(clean);
     }
-    ["AWALE","AWALES","AWELE","AWELES"].forEach(w => DICT.add(w));
+    // Mots K et W complets ODS9
+    const KW_WORDS = [
+      // K
+      "KABYLE","KABYLES","KADDISH","KAFIR","KAFIRS","KAINITE","KAINITES","KAISER","KAISERS",
+      "KAKATOÈS","KAKI","KAKIS","KALÉIDOSCOPE","KAMIKAZE","KAMIKAZES","KANGAROU","KANGOUROU","KANGOUROUS",
+      "KAOLIN","KAOLINS","KAPO","KAPOS","KARAOKE","KARAOKES","KARATE","KARATES","KARATÉKA","KARATÉKAS",
+      "KARITÉ","KARITES","KARMA","KARMAS","KARST","KARSTS","KART","KARTS","KARTING","KARTINGS",
+      "KASHER","KAYAK","KAYAKS","KEBAB","KEBABS","KEEPSAKE","KEEPSAKES","KELVIN","KELVINS",
+      "KERMESSE","KERMESSES","KETCH","KETCHUP","KETCHUPS","KHALIFE","KHALIFES","KHMER","KHMERS",
+      "KILIM","KILIMS","KILO","KILOS","KILOGRAMME","KILOGRAMMES","KILOMETRE","KILOMETRES",
+      "KIMONO","KIMONOS","KIOSQUE","KIOSQUES","KIRSCH","KIRSCHS","KITSCH","KLAXON","KLAXONS",
+      "KLAXONNER","KNOUT","KNOUTS","KOLA","KOLAS","KOALA","KOALAS","KRACH","KRACHS",
+      "KUMQUAT","KUMQUATS","KYRIELLE","KYRIELLES",
+      // W
+      "WAGON","WAGONS","WALLON","WALLONS","WAPITI","WAPITIS","WARRANT","WARRANTS",
+      "WASABI","WASABIS","WATER","WATERS","WATT","WATTS","WEEKEND","WEEKENDS",
+      "WELTER","WELTERS","WHISKY","WHISKYS","WIDGET","WIDGETS","WIFI","WINCH","WINCHS",
+      "WOLFRAM","WOLFRAMS","WOMBAT","WOMBATS",
+    ].map(w => w.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,""))
+     .filter(w => w.length >= 5 && w.length <= 15);
+    KW_WORDS.forEach(w => DICT.add(w));
+
+    // Mots avec accents spéciaux mal gérés par la normalisation NFD
+    ["AWALE","AWALES","AWELE","AWELES",
+     "GAITE","GAITES","BOITE","BOITES","BOITER","CROITE","CROITES",
+     "FLUTE","FLUTES","FLUTER","GITE","GITES","GITER",
+     "CHAINE","CHAINES","CHAINER","TRAINEE","TRAINEES",
+     "BRULER","BRULEUR","BRULURE","BRULIS"].forEach(w => DICT.add(w));
     bar.style.width = "100%";
     msg.textContent = `${DICT.size.toLocaleString()} mots chargés ✓`;
     await sleep(400);
@@ -352,7 +382,10 @@ TABLE CHAISE FLEUR ARBRE MAISON JARDIN VOITURE ENFANT AMOUR MONDE`.trim().split(
   }
 }
 
-function checkWord(word) { return DICT.has(word.toUpperCase()); }
+function checkWord(word) {
+  const clean = word.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
+  return DICT.has(clean);
+}
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function shuffle(arr) {
   const a = [...arr];
@@ -844,6 +877,7 @@ document.getElementById("tuto-next").addEventListener("click", () => {
 });
 document.getElementById("tuto-skip").addEventListener("click", closeTutorial);
 document.getElementById("btn-help").addEventListener("click", () => showTutorial(0));
+document.getElementById("btn-help-splash").addEventListener("click", () => showTutorial(0));
 
 buildSplash();
 loadDictionary();
