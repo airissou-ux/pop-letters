@@ -232,13 +232,13 @@ body{display:flex;flex-direction:column;align-items:center;}
     <div class="tuto-step" id="tuto-1">
       <div class="tuto-icon">👆</div>
       <div class="tuto-title">Former un mot</div>
-      <div class="tuto-text">Tape sur les lettres dans l'ordre pour composer ton mot.<br>Le mot doit faire <strong>5 lettres minimum</strong>.<br>Pour retirer la dernière lettre, retape dessus. Puis appuie sur <strong>VALIDER</strong>.</div>
+      <div class="tuto-text">Tape sur les lettres dans l'ordre pour composer ton mot.<br>Le mot doit faire <strong>5 lettres minimum</strong>.<br>Pour retirer la <strong>dernière lettre</strong> sélectionnée, retape dessus. Pour <strong>tout effacer</strong> d'un coup, appuie sur la croix <strong>✕</strong>.<br>Quand ton mot est prêt, appuie sur <strong>VALIDER</strong>.</div>
     </div>
 
     <div class="tuto-step" id="tuto-2">
       <div class="tuto-icon">⏱</div>
       <div class="tuto-title">La pression du temps</div>
-      <div class="tuto-text">Une nouvelle lettre se révèle à intervalle régulier selon le niveau choisi.<br>Si la <strong>grille est pleine</strong>, la partie s'arrête.<br>Tu as aussi <strong>3 vies</strong> : chaque mot déjà validé resoumis coûte une vie.</div>
+      <div class="tuto-text">Une nouvelle lettre se révèle à intervalle régulier selon le niveau choisi.<br>Si la <strong>grille est pleine</strong>, la partie s'arrête.<br>Tu disposes de <strong>3 vies</strong> : si tu valides un mot que tu as <strong>déjà soumis</strong> dans la même partie, tu perds une vie. À <strong>0 vie</strong>, la partie se termine immédiatement.</div>
     </div>
 
     <div class="tuto-step" id="tuto-3">
@@ -582,30 +582,14 @@ function calcBonus(wordList) {
   let len = 0;
   len += cnt[6]*1; len += cnt[7]*2; len += cnt[8]*3; len += cnt[9]*5; len += cnt[10]*10;
 
-  // Figures répétables : on compte le nombre de séries complètes
-  // Quinte Flush = série 6+7+8+9+10 (la plus haute absorbe les autres)
-  // Quinte       = série 5+6+7+8+9
-  // Quarte       = série 5+6+7+8
-  // Chaque série complète supplémentaire rapporte son bonus
-
-  const qf = Math.min(cnt[6],cnt[7],cnt[8],cnt[9],cnt[10]); // nb Quintes Flush
-  // pour Quinte : après avoir "utilisé" les mots consommés par QF
-  const r5  = cnt[5];
-  const r6  = cnt[6] - qf;
-  const r7  = cnt[7] - qf;
-  const r8  = cnt[8] - qf;
-  const r9  = cnt[9] - qf;
-  const q   = Math.min(r5,r6,r7,r8,r9);    // nb Quintes
-  // pour Quarte : après avoir utilisé ceux consommés par QF et Q
-  const s5  = r5 - q;
-  const s6  = r6 - q;
-  const s7  = r7 - q;
-  const s8  = r8 - q;
-  const qa  = Math.min(s5,s6,s7,s8);       // nb Quartes
+  // Chaque figure est comptée indépendamment (pas de hiérarchie)
+  // Un même mot peut contribuer à plusieurs figures à la fois
+  const qf = Math.min(cnt[6],cnt[7],cnt[8],cnt[9],cnt[10]); // séries Quinte Flush (6+7+8+9+10+)
+  const q  = Math.min(cnt[5],cnt[6],cnt[7],cnt[8],cnt[9]);  // séries Quinte (5+6+7+8+9)
+  const qa = Math.min(cnt[5],cnt[6],cnt[7],cnt[8]);          // séries Quarte (5+6+7+8)
 
   const fig = qf*75 + q*50 + qa*25;
 
-  // Label de la figure la plus haute nouvellement acquise (pour le badge)
   let figLabel = null;
   if (qf > 0) figLabel = qf > 1 ? `${qf}× QUINTE FLUSH !` : "QUINTE FLUSH !";
   else if (q > 0) figLabel = q > 1 ? `${q}× QUINTE !` : "QUINTE !";
