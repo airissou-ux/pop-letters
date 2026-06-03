@@ -105,7 +105,12 @@ body{display:flex;flex-direction:column;align-items:center;}
 .go-title{font-family:var(--font-title);font-size:clamp(36px,10vw,60px);font-weight:900;letter-spacing:.06em;color:var(--yellow);text-shadow:0 2px 12px #00000066;margin-top:8px;}
 .go-sub{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-top:4px;margin-bottom:6px;}
 .go-score{font-family:var(--font-letter);font-size:72px;font-weight:700;color:var(--yellow);line-height:1;margin-bottom:6px;text-shadow:0 2px 20px #00000055;}
-.go-level{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);margin-bottom:16px;}
+.go-level{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+.go-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;width:100%;margin-bottom:14px;}
+.go-card{aspect-ratio:1;border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-letter);font-weight:700;font-size:clamp(10px,3vw,14px);color:#1a2a1a;}
+.go-card.filled{background:linear-gradient(160deg,#e8dfc0,#d4c898);border:1px solid var(--wood-light);}
+.go-card.empty{background:radial-gradient(circle,var(--felt-light),var(--felt-dark));border:1px solid rgba(245,200,0,.15);}
 .go-words{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(245,200,0,.2);border-radius:3px;padding:12px;margin-bottom:10px;}
 .go-words-title{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:7px;}
 .go-words-list{display:flex;flex-wrap:wrap;gap:5px;}
@@ -211,6 +216,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <div class="go-sub">score final</div>
     <div class="go-score" id="go-score">0</div>
     <div class="go-level" id="go-level"></div>
+    <div class="go-grid" id="go-grid"></div>
     <div class="go-words">
       <div class="go-words-title" id="go-words-title">0 mot trouvé</div>
       <div class="go-words-list" id="go-words-list"></div>
@@ -957,6 +963,20 @@ function renderGameOver(reason) {
   document.getElementById("go-score").textContent = total;
   const d = DIFFICULTY[state.diffIdx];
   document.getElementById("go-level").textContent = d.icon + " " + d.label;
+
+  // Mini-grille : snapshot de l'état final
+  const goGrid = document.getElementById("go-grid");
+  goGrid.innerHTML = "";
+  state.grid.forEach(cell => {
+    const el = document.createElement("div");
+    if (cell.revealed && cell.letter) {
+      el.className = "go-card filled";
+      el.textContent = cell.letter;
+    } else {
+      el.className = "go-card empty";
+    }
+    goGrid.appendChild(el);
+  });
   const wt = document.getElementById("go-words-title");
   wt.textContent = `${wordList.length} mot${wordList.length!==1?"s":""} trouvé${wordList.length!==1?"s":""}`;
   const wl = document.getElementById("go-words-list");
