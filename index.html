@@ -160,6 +160,14 @@ body{display:flex;flex-direction:column;align-items:center;}
   box-shadow:0 0 12px rgba(224,48,48,.4);animation:micPulse 1s ease-in-out infinite;}
 .btn-mic.recognized{border-color:var(--valid);color:var(--valid);}
 .btn-mic.unsupported{opacity:.3;cursor:not-allowed;}
+.btn-spell{background:rgba(0,0,0,.25);border:1.5px solid rgba(245,200,0,.25);border-radius:3px;
+  color:var(--dim);font-size:16px;padding:0 14px;cursor:pointer;transition:all .2s;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;}
+.btn-spell:hover{border-color:var(--yellow-dim);color:var(--text);}
+.btn-spell.listening{border-color:#4da6ff;color:#4da6ff;
+  box-shadow:0 0 12px rgba(77,166,255,.4);animation:spellPulse 1s ease-in-out infinite;}
+.btn-spell.unsupported{opacity:.3;cursor:not-allowed;}
+@keyframes spellPulse{0%,100%{box-shadow:0 0 8px rgba(77,166,255,.3);}50%{box-shadow:0 0 18px rgba(77,166,255,.6);}}
 @keyframes micPulse{0%,100%{box-shadow:0 0 8px rgba(224,48,48,.3);}50%{box-shadow:0 0 18px rgba(224,48,48,.6);}}
 /* Toast micro */
 .mic-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -217,7 +225,8 @@ img.logo-load{display:block;width:160px;height:auto;margin:0 auto;filter:drop-sh
       </div>
       <div class="input-actions">
         <button class="btn-clear" id="btn-clear">✕</button>
-        <button class="btn-mic" id="btn-mic" title="Reconnaissance vocale">🎤</button>
+        <button class="btn-mic" id="btn-mic" title="Dire le mot">🎤</button>
+        <button class="btn-spell" id="btn-spell" title="Épeler lettre par lettre">🔡</button>
         <button class="btn-validate" id="btn-validate" disabled>VALIDER</button>
       </div>
     </div>
@@ -1063,67 +1072,188 @@ function showBonusBadge(text) {
 // RECONNAISSANCE VOCALE
 // ═══════════════════════════════════════════════
 
-let micRecognition = null;
-let micListening = false;
-let micToastEl = null;
+let micRecognition  = null;   // mode mot direct
+let spellRecognition = null;  // mode épellation
+let micListening  = false;
+let spellListening = false;
+let spellBuffer   = [];       // lettres épelées accumulées
+let micToastEl    = null;
+
+// ── Mots-commandes reconnus en mode épellation ──
+const SPELL_VALIDATE = ["valider","valide","ok","envoyer"];
+const SPELL_CANCEL   = ["stop","annuler","effacer","recommencer"];
+
+// Mapping phonétique lettre → ce que le moteur TTS entend souvent
+const PHONETIC_MAP = {
+  "A":"A","AH":"A","HA":"A",
+  "B":"B","BE":"B","BEH":"B",
+  "C":"C","CE":"C","SE":"C",
+  "D":"D","DE":"D",
+  "E":"E","EU":"E","HE":"E",
+  "F":"F","EF":"F","EFFE":"F",
+  "G":"G","GE":"G","JE":"G",
+  "H":"H","ACHE":"H","ASH":"H",
+  "I":"I","II":"I",
+  "J":"J","GI":"J","JI":"J",
+  "K":"K","KA":"K","CA":"K",
+  "L":"L","EL":"L","ELLE":"L",
+  "M":"M","EME":"M","AIME":"M",
+  "N":"N","ENE":"N","ENNE":"N",
+  "O":"O","OH":"O","EAU":"O",
+  "P":"P","PE":"P","PEH":"P",
+  "Q":"Q","CU":"Q","KU":"Q",
+  "R":"R","ER":"R","AIR":"R","ERRE":"R",
+  "S":"S","ES":"S","ESSE":"S",
+  "T":"T","TE":"T","TH":"T",
+  "U":"U","UH":"U","HU":"U",
+  "V":"V","VE":"V","VAI":"V",
+  "W":"W","DOUBLE V":"W","DOUBLEVE":"W","DOUBLEVÉ":"W",
+  "X":"X","IX":"X","ICS":"X",
+  "Y":"Y","IGREC":"Y","I GREC":"Y","IGREQUE":"Y",
+  "Z":"Z","ZED":"Z","ZEDE":"Z",
+};
+
+function phoneticToLetter(spoken) {
+  const clean = spoken.trim().toUpperCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^A-Z ]/g,"").trim();
+  if (PHONETIC_MAP[clean]) return PHONETIC_MAP[clean];
+  // Si un seul caractère alphabétique
+  if (clean.length === 1 && clean >= "A" && clean <= "Z") return clean;
+  return null;
+}
 
 function initMic() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const btn = document.getElementById("btn-mic");
+  const btnMic   = document.getElementById("btn-mic");
+  const btnSpell = document.getElementById("btn-spell");
+
   if (!SpeechRecognition) {
-    btn.classList.add("unsupported");
-    btn.title = "Reconnaissance vocale non supportée sur ce navigateur";
+    btnMic.classList.add("unsupported");
+    btnSpell.classList.add("unsupported");
     return;
   }
 
+  // ── Mode mot direct ──
   micRecognition = new SpeechRecognition();
   micRecognition.lang = "fr-FR";
   micRecognition.continuous = false;
   micRecognition.interimResults = false;
-  micRecognition.maxAlternatives = 3;
+  micRecognition.maxAlternatives = 5;
 
   micRecognition.onstart = () => {
     micListening = true;
-    btn.classList.add("listening");
-    showMicToast("🎤 J'écoute…", null);
+    btnMic.classList.add("listening");
+    showMicToast("🎤 Dites le mot…", null);
   };
-
   micRecognition.onend = () => {
     micListening = false;
-    btn.classList.remove("listening");
+    btnMic.classList.remove("listening");
     hideMicToast();
   };
-
   micRecognition.onerror = (e) => {
     micListening = false;
-    btn.classList.remove("listening");
+    btnMic.classList.remove("listening");
     hideMicToast();
     if (e.error === "no-speech") showToast("Aucune parole détectée");
     else if (e.error === "not-allowed") showToast("Accès au micro refusé");
-    else showToast("Erreur micro : " + e.error);
+    else showToast("Erreur micro");
   };
-
   micRecognition.onresult = (e) => {
     hideMicToast();
-    // Essayer chaque alternative par ordre de confiance
     const alternatives = Array.from(e.results[0]);
     let matched = false;
     for (const alt of alternatives) {
       const raw = alt.transcript.trim().toUpperCase();
-      // Nettoyer : enlever accents, espaces, caractères non-alpha
       const word = raw.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
-      if (word.length >= 5 && tryVoiceWord(word)) {
-        matched = true;
-        break;
-      }
+      if (word.length >= 5 && tryVoiceWord(word)) { matched = true; break; }
     }
     if (!matched) {
-      // Afficher ce qui a été entendu
       const heard = alternatives[0].transcript.trim();
-      showToast(`"${heard}" — lettres indisponibles`);
-      btn.classList.remove("recognized");
+      showToast(`"${heard}" — non reconnu`);
+      btnMic.classList.remove("recognized");
     }
   };
+
+  // ── Mode épellation ──
+  spellRecognition = new SpeechRecognition();
+  spellRecognition.lang = "fr-FR";
+  spellRecognition.continuous = true;   // écoute continue lettre par lettre
+  spellRecognition.interimResults = false;
+  spellRecognition.maxAlternatives = 3;
+
+  spellRecognition.onstart = () => {
+    spellListening = true;
+    spellBuffer = [];
+    btnSpell.classList.add("listening");
+    showMicToast("🔡 Épelez…", null);
+    updateSpellToast();
+  };
+  spellRecognition.onend = () => {
+    // Sur iOS, continuous s'arrête tout seul — redémarrer si toujours actif
+    if (spellListening) {
+      try { spellRecognition.start(); } catch(e) {}
+    } else {
+      btnSpell.classList.remove("listening");
+      hideMicToast();
+    }
+  };
+  spellRecognition.onerror = (e) => {
+    if (e.error === "no-speech") return; // normal entre lettres
+    spellListening = false;
+    btnSpell.classList.remove("listening");
+    hideMicToast();
+    if (e.error === "not-allowed") showToast("Accès au micro refusé");
+  };
+  spellRecognition.onresult = (e) => {
+    const spoken = e.results[e.results.length - 1][0].transcript.trim().toLowerCase();
+
+    // Commande VALIDER ?
+    if (SPELL_VALIDATE.some(v => spoken.includes(v))) {
+      stopSpell(true);
+      return;
+    }
+    // Commande STOP ?
+    if (SPELL_CANCEL.some(v => spoken.includes(v))) {
+      stopSpell(false);
+      return;
+    }
+    // Sinon : essayer chaque mot entendu comme une lettre
+    const words = spoken.split(/\s+/);
+    for (const w of words) {
+      const letter = phoneticToLetter(w);
+      if (letter) {
+        spellBuffer.push(letter);
+        updateSpellToast();
+      }
+    }
+  };
+}
+
+function updateSpellToast() {
+  const word = spellBuffer.join("");
+  showMicToast(
+    `🔡 Épelez — <em style="font-size:11px;color:var(--dim)">dites "valider" ou "stop"</em>`,
+    word.length > 0 ? word : null
+  );
+}
+
+function stopSpell(validate) {
+  spellListening = false;
+  try { spellRecognition.stop(); } catch(e) {}
+  document.getElementById("btn-spell").classList.remove("listening");
+  hideMicToast();
+  if (validate && spellBuffer.length >= 5) {
+    const word = spellBuffer.join("");
+    spellBuffer = [];
+    tryVoiceWord(word);
+  } else if (validate && spellBuffer.length > 0) {
+    showToast("Mot trop court (5 lettres min.)");
+    spellBuffer = [];
+  } else {
+    spellBuffer = [];
+    clearSelection();
+  }
 }
 
 function tryVoiceWord(word) {
@@ -1187,10 +1317,22 @@ function tryVoiceWord(word) {
 function toggleMic() {
   if (!micRecognition) return;
   if (state.screen !== "game") return;
+  if (spellListening) stopSpell(false); // couper l'épellation si active
   if (micListening) {
     micRecognition.stop();
   } else {
     try { micRecognition.start(); } catch(e) {}
+  }
+}
+
+function toggleSpell() {
+  if (!spellRecognition) return;
+  if (state.screen !== "game") return;
+  if (micListening) micRecognition.stop(); // couper le mode mot si actif
+  if (spellListening) {
+    stopSpell(false);
+  } else {
+    try { spellRecognition.start(); } catch(e) {}
   }
 }
 
@@ -1209,6 +1351,7 @@ function hideMicToast() {
 document.getElementById("start-btn").addEventListener("click", startGame);
 document.getElementById("btn-clear").addEventListener("click", clearSelection);
 document.getElementById("btn-mic").addEventListener("click", toggleMic);
+document.getElementById("btn-spell").addEventListener("click", toggleSpell);
 document.getElementById("btn-validate").addEventListener("click", handleValidate);
 document.getElementById("btn-menu").addEventListener("click", () => {
   if (state.intervalId) clearInterval(state.intervalId);
