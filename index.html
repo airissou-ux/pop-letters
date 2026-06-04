@@ -1317,22 +1317,28 @@ function tryVoiceWord(word) {
 function toggleMic() {
   if (!micRecognition) return;
   if (state.screen !== "game") return;
-  if (spellListening) stopSpell(false); // couper l'épellation si active
   if (micListening) {
+    // Arrêter
     micRecognition.stop();
   } else {
-    try { micRecognition.start(); } catch(e) {}
+    // Démarrer IMMÉDIATEMENT (Safari iOS exige .start() en premier dans le handler)
+    try { micRecognition.start(); } catch(e) { return; }
+    // Couper l'épellation après le start
+    if (spellListening) stopSpell(false);
   }
 }
 
 function toggleSpell() {
   if (!spellRecognition) return;
   if (state.screen !== "game") return;
-  if (micListening) micRecognition.stop(); // couper le mode mot si actif
   if (spellListening) {
+    // Arrêter
     stopSpell(false);
   } else {
-    try { spellRecognition.start(); } catch(e) {}
+    // Démarrer IMMÉDIATEMENT (Safari iOS exige .start() en premier dans le handler)
+    try { spellRecognition.start(); } catch(e) { return; }
+    // Couper le mode mot après le start
+    if (micListening) micRecognition.stop();
   }
 }
 
