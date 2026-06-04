@@ -151,6 +151,24 @@ body{display:flex;flex-direction:column;align-items:center;}
 /* Bouton aide dans bottom-bar */
 .btn-help{background:rgba(0,0,0,.2);border:1px solid rgba(245,200,0,.2);border-radius:50%;color:var(--yellow-dim);font-size:13px;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
 .btn-help:hover{border-color:var(--yellow);color:var(--yellow);}
+/* Bouton micro */
+.btn-mic{background:rgba(0,0,0,.25);border:1.5px solid rgba(245,200,0,.25);border-radius:3px;
+  color:var(--dim);font-size:18px;padding:0 14px;cursor:pointer;transition:all .2s;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;}
+.btn-mic:hover{border-color:var(--yellow-dim);color:var(--text);}
+.btn-mic.listening{border-color:var(--red);color:var(--red);
+  box-shadow:0 0 12px rgba(224,48,48,.4);animation:micPulse 1s ease-in-out infinite;}
+.btn-mic.recognized{border-color:var(--valid);color:var(--valid);}
+.btn-mic.unsupported{opacity:.3;cursor:not-allowed;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 8px rgba(224,48,48,.3);}50%{box-shadow:0 0 18px rgba(224,48,48,.6);}}
+/* Toast micro */
+.mic-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(10,20,15,.92);border:1.5px solid var(--yellow-dim);border-radius:8px;
+  padding:14px 22px;color:var(--text);font-size:15px;letter-spacing:.05em;
+  z-index:150;pointer-events:none;text-align:center;min-width:180px;
+  animation:toastIn .2s ease;}
+.mic-toast .mic-word{font-family:var(--font-letter);font-size:22px;font-weight:700;
+  color:var(--yellow);letter-spacing:.1em;margin-top:6px;}
 .tuto-link{background:none;border:none;color:var(--yellow-dim);font-family:var(--font-ui);font-size:12px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;margin-top:10px;padding:6px;text-decoration:underline;text-underline-offset:3px;transition:color .2s;}
 .tuto-link:hover{color:var(--yellow);}
 .splash-logo{width:100%;text-align:center;margin-bottom:2px;margin-top:16px;overflow:hidden;}
@@ -199,6 +217,7 @@ img.logo-load{display:block;width:160px;height:auto;margin:0 auto;filter:drop-sh
       </div>
       <div class="input-actions">
         <button class="btn-clear" id="btn-clear">✕</button>
+        <button class="btn-mic" id="btn-mic" title="Reconnaissance vocale">🎤</button>
         <button class="btn-validate" id="btn-validate" disabled>VALIDER</button>
       </div>
     </div>
@@ -1040,8 +1059,156 @@ function showBonusBadge(text) {
   state.bonusTimer = setTimeout(() => { if (badgeEl) { badgeEl.remove(); badgeEl = null; } }, 2500);
 }
 
+// ═══════════════════════════════════════════════
+// RECONNAISSANCE VOCALE
+// ═══════════════════════════════════════════════
+
+let micRecognition = null;
+let micListening = false;
+let micToastEl = null;
+
+function initMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById("btn-mic");
+  if (!SpeechRecognition) {
+    btn.classList.add("unsupported");
+    btn.title = "Reconnaissance vocale non supportée sur ce navigateur";
+    return;
+  }
+
+  micRecognition = new SpeechRecognition();
+  micRecognition.lang = "fr-FR";
+  micRecognition.continuous = false;
+  micRecognition.interimResults = false;
+  micRecognition.maxAlternatives = 3;
+
+  micRecognition.onstart = () => {
+    micListening = true;
+    btn.classList.add("listening");
+    showMicToast("🎤 J'écoute…", null);
+  };
+
+  micRecognition.onend = () => {
+    micListening = false;
+    btn.classList.remove("listening");
+    hideMicToast();
+  };
+
+  micRecognition.onerror = (e) => {
+    micListening = false;
+    btn.classList.remove("listening");
+    hideMicToast();
+    if (e.error === "no-speech") showToast("Aucune parole détectée");
+    else if (e.error === "not-allowed") showToast("Accès au micro refusé");
+    else showToast("Erreur micro : " + e.error);
+  };
+
+  micRecognition.onresult = (e) => {
+    hideMicToast();
+    // Essayer chaque alternative par ordre de confiance
+    const alternatives = Array.from(e.results[0]);
+    let matched = false;
+    for (const alt of alternatives) {
+      const raw = alt.transcript.trim().toUpperCase();
+      // Nettoyer : enlever accents, espaces, caractères non-alpha
+      const word = raw.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
+      if (word.length >= 5 && tryVoiceWord(word)) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      // Afficher ce qui a été entendu
+      const heard = alternatives[0].transcript.trim();
+      showToast(`"${heard}" — lettres indisponibles`);
+      btn.classList.remove("recognized");
+    }
+  };
+}
+
+function tryVoiceWord(word) {
+  // Vérifier que toutes les lettres du mot sont disponibles sur la grille
+  const available = {};
+  state.grid.forEach(c => {
+    if (c.revealed && !c.gone && c.letter) {
+      available[c.letter] = (available[c.letter] || 0) + 1;
+    }
+  });
+
+  const needed = {};
+  for (const ch of word) {
+    needed[ch] = (needed[ch] || 0) + 1;
+  }
+  for (const ch in needed) {
+    if ((available[ch] || 0) < needed[ch]) return false;
+  }
+
+  // Construire la sélection dans l'ordre du mot
+  const usedIds = new Set();
+  const selection = [];
+  for (const ch of word) {
+    const cell = state.grid.find(c =>
+      c.revealed && !c.gone && c.letter === ch && !usedIds.has(c.id)
+    );
+    if (!cell) return false;
+    usedIds.add(cell.id);
+    selection.push(cell.id);
+  }
+
+  // Appliquer la sélection
+  state.selection = selection;
+  state.grid.forEach(c => { c.selected = false; c.valid = false; });
+  selection.forEach(id => { state.grid[id].selected = true; });
+
+  // Vérifier validité dictionnaire
+  if (checkWord(word)) {
+    selection.forEach(id => { state.grid[id].valid = true; });
+    document.getElementById("btn-mic").classList.add("recognized");
+    showMicToast("✓ Mot reconnu", word);
+    setTimeout(() => {
+      document.getElementById("btn-mic").classList.remove("recognized");
+      handleValidate();
+    }, 800);
+  } else {
+    renderGrid();
+    renderWordDisplay();
+    renderValidateBtn();
+    showToast(`"${word}" absent du dictionnaire`);
+    const wd = document.getElementById("word-display");
+    wd.classList.add("shake");
+    setTimeout(() => wd.classList.remove("shake"), 400);
+  }
+  renderGrid();
+  renderWordDisplay();
+  renderValidateBtn();
+  return true;
+}
+
+function toggleMic() {
+  if (!micRecognition) return;
+  if (state.screen !== "game") return;
+  if (micListening) {
+    micRecognition.stop();
+  } else {
+    try { micRecognition.start(); } catch(e) {}
+  }
+}
+
+function showMicToast(msg, word) {
+  hideMicToast();
+  micToastEl = document.createElement("div");
+  micToastEl.className = "mic-toast";
+  micToastEl.innerHTML = msg + (word ? `<div class="mic-word">${word}</div>` : "");
+  document.body.appendChild(micToastEl);
+}
+
+function hideMicToast() {
+  if (micToastEl) { micToastEl.remove(); micToastEl = null; }
+}
+
 document.getElementById("start-btn").addEventListener("click", startGame);
 document.getElementById("btn-clear").addEventListener("click", clearSelection);
+document.getElementById("btn-mic").addEventListener("click", toggleMic);
 document.getElementById("btn-validate").addEventListener("click", handleValidate);
 document.getElementById("btn-menu").addEventListener("click", () => {
   if (state.intervalId) clearInterval(state.intervalId);
@@ -1108,6 +1275,7 @@ document.getElementById("btn-help-splash").addEventListener("click", () => showT
 
 buildSplash();
 loadDictionary();
+initMic();
 </script>
 </body>
 </html>
