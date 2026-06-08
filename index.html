@@ -1558,7 +1558,7 @@ async function openDailyModal() {
   content.innerHTML = (alreadyPlayed
     ? `<div class="daily-played">Ton score aujourd'hui : <strong>${myScore} pts</strong><br>
        <span style="font-size:12px;margin-top:4px;display:block;">Reviens demain pour un nouveau tirage !</span></div>`
-    : `<button class="daily-start-btn" onclick="closeModal('modal-daily');setTimeout(startDailyGame,200)">🚀 JOUER LE POP DU JOUR</button>`)
+    : `<button class="daily-start-btn" onclick="startDailyGame()">🚀 JOUER LE POP DU JOUR</button>`)
     + (lb.length ? `
     <div class="daily-scores">
       <div class="daily-scores-title">🏆 Classement du jour — ${lb.length} joueur${lb.length>1?"s":""}</div>
@@ -1568,12 +1568,80 @@ async function openDailyModal() {
 }
 
 function startDailyGame() {
-  isDuelMode = false;
-  state.diffIdx = 0;
-  state.deck = seededShuffle([...LETTER_POOL], getDailySeed());
-  startGame();
-  // Forcer isDailyMode APRÈS startGame (qui peut le remettre à false)
+  // Fermer tout modal ouvert
+  document.querySelectorAll(".modal-overlay").forEach(el => el.classList.add("hidden"));
+
+  // Flags
   isDailyMode = true;
+  isDuelMode  = false;
+
+  // Préparer le deck daily
+  const dailyDeck = seededShuffle([...LETTER_POOL], getDailySeed());
+
+  // Réinitialiser l'état — copie directe de startGame sans toucher isDailyMode
+  if (state.intervalId) { clearInterval(state.intervalId); clearTimeout(state.intervalId); }
+  const gridEl = document.getElementById("grid");
+  if (gridEl) gridEl.innerHTML = "";
+
+  state.deck      = dailyDeck;
+  state.grid      = Array.from({length:20}, (_, i) => emptyCell(i));
+  state.selection = [];
+  state.wordList  = [];
+  state.score     = 0;
+  state.mistakes  = 0;
+  state.activeTab = 0;
+  state.diffIdx   = 0;
+
+  const allIdx = shuffle([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]);
+  allIdx.slice(0,5).forEach(i => {
+    state.grid[i].letter  = drawLetter();
+    state.grid[i].revealed = true;
+  });
+
+  renderGame();
+  showScreen("game");
+  setTimeout(() => { allIdx.slice(0,5).forEach(i => flipCard(i)); }, 50);
+
+  // Lancer le chrono daily progressif
+  startDailyInterval();
+}
+
+function startDailyInterval() {
+  function getDailyMs() {
+    if (state.score >= 200) return 3000;
+    if (state.score >= 100) return 4000;
+    return 5000;
+  }
+  function updatePhaseUI() {
+    const phases = [
+      { min:200, icon:"🐟", label:"Sharp" },
+      { min:100, icon:"🐢", label:"Cool"  },
+      { min:0,   icon:"🐌", label:"Slow"  },
+    ];
+    const p = phases.find(ph => state.score >= ph.min);
+    const iconEl = document.getElementById("diff-icon");
+    const nameEl = document.getElementById("diff-name");
+    if (iconEl) iconEl.textContent = p.icon;
+    if (nameEl) nameEl.textContent = p.label;
+  }
+  function tick() {
+    if (state.screen !== "game" || !isDailyMode) return;
+    updatePhaseUI();
+    const hidden = state.grid.map((c,i) => (!c.revealed ? i : -1)).filter(i => i !== -1);
+    if (hidden.length === 0) { triggerGameOver("grid_full"); return; }
+    const idx = hidden[Math.floor(Math.random() * hidden.length)];
+    state.grid[idx].letter  = drawLetter();
+    state.grid[idx].revealed = true;
+    flipCard(idx);
+    renderProgDots();
+    if (state.grid.every(c => c.revealed)) {
+      setTimeout(() => triggerGameOver("grid_full"), getDailyMs());
+      return;
+    }
+    state.intervalId = setTimeout(tick, getDailyMs());
+  }
+  updatePhaseUI();
+  state.intervalId = setTimeout(tick, getDailyMs());
 }
 
 // ── DUEL ──
