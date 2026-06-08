@@ -494,6 +494,9 @@ body{display:flex;flex-direction:column;align-items:center;}
   background:none;border:none;cursor:pointer;padding:4px 12px;transition:all .2s;min-width:50px;}
 .nav-btn .nav-icon{font-size:20px;line-height:1;}
 .nav-btn .nav-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);}
+.nav-btn .nav-pseudo{font-size:9px;font-weight:700;color:var(--dim);max-width:52px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.nav-btn.active .nav-pseudo{color:var(--coral);}
 .nav-btn.active .nav-lbl{color:var(--coral);}
 .nav-btn.active .nav-icon{filter:drop-shadow(0 0 6px var(--coral));}
 .prog-dots{display:flex;gap:3px;}
@@ -614,7 +617,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
     <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-splash">👤</span><span class="nav-lbl">Profil</span></button>
+    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-splash">👤</span><span class="nav-pseudo" id="nav-pseudo-splash">Profil</span></button>
   </div>
 </div>
 
@@ -660,7 +663,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" id="nav-daily" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" id="nav-duel" onclick="openDuelModal()" style="position:relative;"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span><span class="duel-indicator" id="duel-indicator"></span></button>
     <button class="nav-btn" id="nav-share" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" id="nav-profile" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon">👤</span><span class="nav-lbl">Profil</span></button>
+    <button class="nav-btn" id="nav-profile" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon">👤</span><span class="nav-pseudo" id="nav-pseudo-game">Profil</span></button>
   </div>
 </div>
 
@@ -682,7 +685,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
     <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-go">👤</span><span class="nav-lbl">Profil</span></button>
+    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-go">👤</span><span class="nav-pseudo" id="nav-pseudo-go">Profil</span></button>
   </div>
 </div>
 
@@ -773,7 +776,6 @@ body{display:flex;flex-direction:column;align-items:center;}
   <div class="modal-sheet" style="position:relative;">
     <div class="modal-handle"></div>
     <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
-    <div class="modal-title" id="profile-title">Mon profil</div>
     <div class="pseudo-edit-wrap" id="pseudo-edit-wrap">
       <div class="pseudo-display" id="pseudo-display">…</div>
       <button class="pseudo-edit-btn" onclick="togglePseudoEdit()">✏️ Modifier</button>
@@ -956,10 +958,18 @@ async function loadUserProfile() {
 }
 
 function updateProfileUI() {
-  if (!userProfile) return;
-  const initial = (userProfile.pseudo || "?")[0].toUpperCase();
-  const el = document.getElementById("nav-profile-icon");
-  if (el) el.textContent = initial;
+  const pseudo = userProfile?.pseudo || null;
+  const initial = pseudo ? pseudo[0].toUpperCase() : "👤";
+  // Mettre à jour les icônes (initiale si connecté)
+  ["nav-profile-icon","nav-profile-icon-splash","nav-profile-icon-go"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = initial;
+  });
+  // Mettre à jour les pseudos dans la nav
+  ["nav-pseudo-splash","nav-pseudo-game","nav-pseudo-go"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = pseudo || "Profil";
+  });
 }
 
 // ── MODALS ──
@@ -967,8 +977,6 @@ function openModal(id) {
   document.getElementById(id).classList.remove("hidden");
   if (id === "modal-profile") {
     // Afficher le pseudo immédiatement sans attendre le chargement async
-    const titleEl = document.getElementById("profile-title");
-    if (titleEl) titleEl.textContent = userProfile?.pseudo || (currentUser ? "Mon profil" : "Connexion");
     renderProfileModal();
   }
 }
@@ -981,11 +989,9 @@ async function renderProfileModal() {
   const statsGrid = document.getElementById("stats-grid");
   const histList  = document.getElementById("history-list");
   const logoutBtn = document.querySelector(".logout-btn");
-  const title     = document.getElementById("profile-title");
-
+  
   if (!currentUser) {
-    title.textContent = "Profil";
-    statsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);font-size:13px;">
+      statsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);font-size:13px;">
       Connecte-toi pour sauvegarder tes scores !<br><br>
       <button class="auth-btn" style="font-size:14px;padding:11px;" onclick="closeModal('modal-profile');showScreen('auth')">Se connecter</button>
     </div>`;
@@ -998,11 +1004,11 @@ async function renderProfileModal() {
   // Recharger le profil si pas encore disponible
   if (!userProfile && currentUser) await loadUserProfile();
   const pseudo = userProfile?.pseudo || currentUser?.email?.split("@")[0] || "Mon profil";
-  title.textContent = pseudo;
   const pseudoDisplay = document.getElementById("pseudo-display");
   if (pseudoDisplay) pseudoDisplay.textContent = pseudo;
   const pseudoEditWrap = document.getElementById("pseudo-edit-wrap");
   if (pseudoEditWrap) pseudoEditWrap.style.display = currentUser ? "flex" : "none";
+  updateProfileUI();
 
   const { data: games } = await sb.from("games")
     .select("*").eq("user_id", currentUser.id).order("score",{ascending:false}).limit(50);
@@ -1107,7 +1113,7 @@ async function savePseudo() {
   if (userProfile) userProfile.pseudo = val;
   document.getElementById("pseudo-input-wrap").classList.remove("show");
   document.getElementById("pseudo-display").textContent = val;
-  document.getElementById("profile-title").textContent = val;
+  // profile-title supprimé
   updateProfileUI();
   showToast("Pseudo mis à jour !");
   saveBtn.textContent = "OK";
