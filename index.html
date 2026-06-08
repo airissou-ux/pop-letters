@@ -534,6 +534,13 @@ body{display:flex;flex-direction:column;align-items:center;}
   <div class="diff-list" id="diff-list"></div>
   <button class="start-btn" id="start-btn">START 🚀</button>
   <button class="tuto-link-splash" id="btn-help-splash">? Règles du jeu</button>
+  <div class="bottom-nav" style="margin-top:20px;position:relative;z-index:1;">
+    <button class="nav-btn active"><span class="nav-icon">🎮</span><span class="nav-lbl">Jouer</span></button>
+    <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
+    <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
+    <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
+    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-splash">👤</span><span class="nav-lbl">Profil</span></button>
+  </div>
 </div>
 
 <div class="screen" id="game">
@@ -595,6 +602,13 @@ body{display:flex;flex-direction:column;align-items:center;}
   <div class="go-bonus" id="go-bonus"></div>
   <button class="go-replay" id="go-replay">REJOUER 🔥</button>
   <button class="btn-back" id="btn-back">← Changer de niveau</button>
+  <div class="bottom-nav" style="margin-top:16px;">
+    <button class="nav-btn" id="nav-play-go" onclick="isDailyMode=false;isDuelMode=false;startGame()"><span class="nav-icon">🎮</span><span class="nav-lbl">Rejouer</span></button>
+    <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
+    <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
+    <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
+    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-go">👤</span><span class="nav-lbl">Profil</span></button>
+  </div>
 </div>
 
 <!-- Tutoriel -->
@@ -975,6 +989,8 @@ async function openDailyModal() {
 
 function startDailyGame() {
   isDailyMode=true; isDuelMode=false;
+  // Forcer le niveau Moon au départ (sera ajusté dynamiquement)
+  state.diffIdx = 0;
   state.deck = seededShuffle([...LETTER_POOL], getDailySeed());
   startGame();
 }
@@ -1495,7 +1511,7 @@ function drawLetter() {
 }
 
 function startGame() {
-  if (state.intervalId) clearInterval(state.intervalId);
+  if (state.intervalId) { clearInterval(state.intervalId); clearTimeout(state.intervalId); }
   const gridEl = document.getElementById("grid");
   if (gridEl) gridEl.innerHTML = "";
 
@@ -1519,27 +1535,53 @@ function startGame() {
 
   setTimeout(() => { first5.forEach(i => flipCard(i)); }, 50);
 
-  const ms = DIFFICULTY[state.diffIdx].ms;
-  state.intervalId = setInterval(() => {
-    if (state.screen !== "game") { clearInterval(state.intervalId); return; }
-    const hidden = state.grid.map((c,i) => (!c.revealed ? i : -1)).filter(i => i !== -1);
-    if (hidden.length === 0) {
-      clearInterval(state.intervalId);
-      triggerGameOver("grid_full");
-      return;
+  // Mode POP du jour : vitesse progressive selon le score
+  // Phase 1 : 0-99 pts → 🌙 Moon (5s), Phase 2 : 100-199 pts → ⭐ Star (4s), Phase 3 : 200+ pts → ☄️ Comet (3s)
+  function getDailyMs() {
+    if (!isDailyMode) return DIFFICULTY[state.diffIdx].ms;
+    if (state.score >= 200) return 3000;
+    if (state.score >= 100) return 4000;
+    return 5000;
+  }
+  function getDailyPhaseIcon() {
+    if (!isDailyMode) return null;
+    if (state.score >= 200) return { icon:"☄️", label:"Comet" };
+    if (state.score >= 100) return { icon:"⭐", label:"Star" };
+    return { icon:"🌙", label:"Moon" };
+  }
+
+  let ms = getDailyMs();
+  function scheduleNext() {
+    ms = getDailyMs();
+    // Mettre à jour l'indicateur de phase si mode daily
+    if (isDailyMode) {
+      const phase = getDailyPhaseIcon();
+      const iconEl = document.getElementById("diff-icon");
+      const nameEl = document.getElementById("diff-name");
+      if (iconEl) iconEl.textContent = phase.icon;
+      if (nameEl) nameEl.textContent = phase.label;
     }
+    state.intervalId = setTimeout(runInterval, ms);
+  }
+
+  function runInterval() {
+    if (state.screen !== "game") return;
+    const hidden = state.grid.map((c,i) => (!c.revealed ? i : -1)).filter(i => i !== -1);
+    if (hidden.length === 0) { triggerGameOver("grid_full"); return; }
     const idx = hidden[Math.floor(Math.random() * hidden.length)];
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
     flipCard(idx);
     renderProgDots();
     if (state.grid.every(c => c.revealed)) {
-      clearInterval(state.intervalId);
-      // Laisser le même temps que l'intervalle avant de clôturer
-      // pour que le joueur puisse encore former un mot avec la dernière lettre
-      setTimeout(() => triggerGameOver("grid_full"), ms);
+      setTimeout(() => triggerGameOver("grid_full"), getDailyMs());
+      return;
     }
-  }, ms);
+    scheduleNext();
+  }
+
+  // Remplacer l'intervalId par le timeout (on utilise clearTimeout maintenant)
+  scheduleNext();
 }
 
 // Flip animé : dos → face
@@ -1578,7 +1620,7 @@ function resetCard(id) {
 }
 
 function triggerGameOver(reason) {
-  if (state.intervalId) clearInterval(state.intervalId);
+  if (state.intervalId) { clearInterval(state.intervalId); clearTimeout(state.intervalId); }
   state.screen = "gameover";
   renderGameOver(reason);
   showScreen("gameover");
@@ -1887,19 +1929,26 @@ function showBonusBadge(text) {
   state.bonusTimer = setTimeout(() => { if (badgeEl) { badgeEl.remove(); badgeEl = null; } }, 2500);
 }
 
-document.getElementById("start-btn").addEventListener("click", startGame);
-document.getElementById("btn-clear").addEventListener("click", clearSelection);
-document.getElementById("btn-validate").addEventListener("click", handleValidate);
-document.getElementById("btn-menu").addEventListener("click", () => {
-  if (state.intervalId) clearInterval(state.intervalId);
-  buildSplash();
-  showScreen("splash");
-});
-document.getElementById("go-replay").addEventListener("click", startGame);
-document.getElementById("btn-back").addEventListener("click", () => {
-  buildSplash();
-  showScreen("splash");
-});
+// Event listeners via délégation — robuste même si Supabase charge en asynchrone
+function bindListeners() {
+  const safe = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener("click", fn); };
+  safe("start-btn",   startGame);
+  safe("btn-clear",   clearSelection);
+  safe("btn-validate", handleValidate);
+  safe("btn-menu",    () => { if(state.intervalId) clearInterval(state.intervalId); buildSplash(); showScreen("splash"); });
+  safe("btn-help",    () => showTutorial(0));
+  safe("btn-help-splash", () => showTutorial(0));
+  safe("go-replay",   () => { isDailyMode=false; isDuelMode=false; duelId=null; startGame(); });
+  safe("btn-back",    () => { buildSplash(); showScreen("splash"); });
+  safe("tuto-next",   () => { if(tutoStep<TUTO_STEPS-1){tutoStep++;renderTutoStep();}else{closeTutorial();} });
+  safe("tuto-skip",   closeTutorial);
+}
+// Appel immédiat + après DOMContentLoaded pour être sûr
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bindListeners);
+} else {
+  bindListeners();
+}
 
 
 // ── TUTORIEL ──
@@ -1941,17 +1990,7 @@ function renderTutoStep() {
   }
 }
 
-document.getElementById("tuto-next").addEventListener("click", () => {
-  if (tutoStep < TUTO_STEPS - 1) {
-    tutoStep++;
-    renderTutoStep();
-  } else {
-    closeTutorial();
-  }
-});
-document.getElementById("tuto-skip").addEventListener("click", closeTutorial);
-document.getElementById("btn-help").addEventListener("click", () => showTutorial(0));
-document.getElementById("btn-help-splash").addEventListener("click", () => showTutorial(0));
+// listeners gérés par bindListeners()
 document.getElementById("btn-help-splash").addEventListener("click", () => showTutorial(0));
 
 // init via initApp() after Supabase loads
