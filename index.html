@@ -122,10 +122,9 @@ body{display:flex;flex-direction:column;align-items:center;}
 .load-logo-mini span:nth-child(1){transform:translateY(18px) rotate(-22deg);}
 .load-logo-mini span:nth-child(2){transform:translateY(0px)  rotate(0deg);}
 .load-logo-mini span:nth-child(3){transform:translateY(18px) rotate(22deg);}
-.load-sub{font-family:var(--font-title);font-weight:900;font-size:26px;letter-spacing:.4em;
-  background:linear-gradient(90deg,#FF4757,#FFB703,#06D6A0);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  text-align:center;padding-left:.4em;margin-bottom:8px;}
+.load-sub{font-family:var(--font-title);font-weight:900;font-size:26px;letter-spacing:.12em;
+  color:#fff;
+  text-align:center;padding-left:.12em;margin-bottom:8px;}
 .load-bar-wrap{width:200px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
 .load-bar{height:100%;width:0;background:linear-gradient(90deg,var(--coral),var(--amber));border-radius:2px;transition:width .3s;}
 .load-msg{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
@@ -173,11 +172,10 @@ body{display:flex;flex-direction:column;align-items:center;}
 }
 .splash-logo-sub{
   font-family:var(--font-title);font-weight:900;
-  font-size:26px;  /* même hauteur visuelle que les lettres dans les cartes */
-  letter-spacing:.4em;text-transform:uppercase;
-  background:linear-gradient(90deg,#FF4757,#FFB703,#06D6A0);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-top:0;text-align:center;padding-left:.4em;
+  font-size:26px;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:#fff;
+  margin-top:0;text-align:center;padding-left:.12em;
   line-height:1;
 }
 .splash-tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:14px;margin-bottom:28px;}
@@ -227,9 +225,8 @@ body{display:flex;flex-direction:column;align-items:center;}
 .hd-logo-cards span:nth-child(2){transform:translateY(0px) rotate(0deg);}
 .hd-logo-cards span:nth-child(3){transform:translateY(7px) rotate(22deg);}
 .hd-logo-letters{font-family:var(--font-title);font-weight:900;font-size:17px;
-  letter-spacing:.2em;text-transform:uppercase;
-  background:linear-gradient(90deg,#FF4757,#FFB703,#06D6A0);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  letter-spacing:.08em;text-transform:uppercase;
+  color:#fff;}
 .hd-mistakes{display:flex;gap:5px;align-items:center;}
 .dot{width:11px;height:11px;border-radius:50%;border:2px solid rgba(255,255,255,.15);transition:all .3s;}
 .dot.used{background:var(--coral);border-color:var(--coral);box-shadow:0 0 8px var(--coral);}
@@ -696,7 +693,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     </div>
     <div class="splash-logo-sub">LETTERS</div>
   </div>
-  <div class="splash-tag">Brain game · Trouve le plus de mots</div>
+  <div class="splash-tag">BRAIN GAME</div>
   <div class="diff-list" id="diff-list"></div>
   <button class="start-btn" id="start-btn">START 🚀</button>
   <button class="tuto-link-splash" id="btn-help-splash">? Règles du jeu</button>
