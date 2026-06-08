@@ -1122,9 +1122,11 @@ async function handleAuth() {
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) throw error;
       currentUser = data.user;
-      await sb.from("profiles").insert({
+      // Upsert pour éviter les doublons si le profil existe déjà partiellement
+      const { error: profileError } = await sb.from("profiles").upsert({
         id: currentUser.id, pseudo, emoji: selectedEmoji, best_score:0, total_games:0
-      });
+      }, { onConflict: "id" });
+      if (profileError) console.error("Profile creation error:", profileError);
       await loadUserProfile();
     } else {
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -1158,23 +1160,26 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
-  const { data } = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
+  const { data, error } = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
+  if (error) console.error("loadUserProfile error:", error);
   if (data) {
     userProfile = data;
+    // Corriger emoji manquant silencieusement
     if (!userProfile.emoji) {
       userProfile.emoji = "🎯";
       await sb.from("profiles").update({ emoji: "🎯" }).eq("id", currentUser.id);
     }
-    // Ne jamais écraser le pseudo par l'email
-    if (!userProfile.pseudo || userProfile.pseudo.includes("@")) {
-      // Pseudo invalide — ne pas afficher l'email, afficher vide et forcer la saisie
+    // Nettoyer pseudo invalide (email stocké par erreur)
+    if (userProfile.pseudo && userProfile.pseudo.includes("@")) {
       userProfile.pseudo = null;
+      await sb.from("profiles").update({ pseudo: null }).eq("id", currentUser.id);
     }
   } else {
-    // Profil manquant — créer sans pseudo (le joueur devra le choisir)
-    const defaultProfile = { id: currentUser.id, emoji: "🎯", best_score: 0, total_games: 0 };
-    const { data: newProfile } = await sb.from("profiles").upsert(defaultProfile).select().maybeSingle();
-    userProfile = newProfile || defaultProfile;
+    // Profil manquant — créer un squelette, le joueur choisira son pseudo dans les réglages
+    const skeleton = { id: currentUser.id, emoji: "🎯", best_score: 0, total_games: 0 };
+    const { data: newProfile } = await sb.from("profiles")
+      .upsert(skeleton, { onConflict: "id" }).select().maybeSingle();
+    userProfile = newProfile || skeleton;
   }
 }
 
@@ -1233,13 +1238,6 @@ async function renderProfileModal() {
   const heroPseudo = userProfile?.pseudo || null;
   document.getElementById("profile-hero-emoji").textContent = heroEmoji;
   document.getElementById("profile-hero-pseudo").textContent = heroPseudo || "✏️ Choisir un pseudo";
-  // Ouvrir automatiquement l'edit pseudo si pas encore défini
-  if (!heroPseudo) {
-    setTimeout(() => {
-      document.getElementById("edit-pseudo-box")?.classList.add("show");
-      document.getElementById("edit-pseudo-input")?.focus();
-    }, 400);
-  }
 
   // Stats
   const { data: games } = await sb.from("games")
