@@ -1158,25 +1158,22 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
-  const { data, error } = await sb.from("profiles").select("*").eq("id", currentUser.id).single();
+  const { data } = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
   if (data) {
     userProfile = data;
-    // S'assurer que emoji a une valeur
     if (!userProfile.emoji) {
       userProfile.emoji = "🎯";
       await sb.from("profiles").update({ emoji: "🎯" }).eq("id", currentUser.id);
     }
+    // Ne jamais écraser le pseudo par l'email
+    if (!userProfile.pseudo || userProfile.pseudo.includes("@")) {
+      // Pseudo invalide — ne pas afficher l'email, afficher vide et forcer la saisie
+      userProfile.pseudo = null;
+    }
   } else {
-    // Profil manquant — le créer avec des valeurs par défaut
-    const emailBase = currentUser.email.split("@")[0].slice(0,15);
-    const defaultProfile = {
-      id: currentUser.id,
-      pseudo: emailBase,
-      emoji: "🎯",
-      best_score: 0,
-      total_games: 0
-    };
-    const { data: newProfile } = await sb.from("profiles").upsert(defaultProfile).select().single();
+    // Profil manquant — créer sans pseudo (le joueur devra le choisir)
+    const defaultProfile = { id: currentUser.id, emoji: "🎯", best_score: 0, total_games: 0 };
+    const { data: newProfile } = await sb.from("profiles").upsert(defaultProfile).select().maybeSingle();
     userProfile = newProfile || defaultProfile;
   }
 }
@@ -1184,7 +1181,7 @@ async function loadUserProfile() {
 function updateProfileUI() {
   const emoji  = userProfile?.emoji  || "👤";
   const pseudo = userProfile?.pseudo || null;
-  const label  = pseudo ? (pseudo.length > 7 ? pseudo.slice(0,7)+"…" : pseudo) : "Profil";
+  const label  = (pseudo && !pseudo.includes("@")) ? (pseudo.length > 7 ? pseudo.slice(0,7)+"…" : pseudo) : "Profil";
 
   // Mettre à jour les 3 boutons nav
   [
@@ -1233,9 +1230,16 @@ async function renderProfileModal() {
 
   // Hero
   const heroEmoji  = userProfile?.emoji  || "🎯";
-  const heroPseudo = userProfile?.pseudo || currentUser?.email?.split("@")[0] || "—";
+  const heroPseudo = userProfile?.pseudo || null;
   document.getElementById("profile-hero-emoji").textContent = heroEmoji;
-  document.getElementById("profile-hero-pseudo").textContent = heroPseudo;
+  document.getElementById("profile-hero-pseudo").textContent = heroPseudo || "✏️ Choisir un pseudo";
+  // Ouvrir automatiquement l'edit pseudo si pas encore défini
+  if (!heroPseudo) {
+    setTimeout(() => {
+      document.getElementById("edit-pseudo-box")?.classList.add("show");
+      document.getElementById("edit-pseudo-input")?.focus();
+    }, 400);
+  }
 
   // Stats
   const { data: games } = await sb.from("games")
@@ -1258,7 +1262,8 @@ async function renderProfileModal() {
     histList.innerHTML = games.slice(0,20).map((g, i) => {
       const d = new Date(g.created_at);
       const date = d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
-      const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
+      const legacyIcons = {"Moon":"🌙","Star":"⭐","Comet":"☄️","Nova":"🌟","Supernova":"💫"};
+    const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || legacyIcons[g.level] || "🎮";
       const gKey = "game_" + i;
       gameDetailStore[gKey] = g;
       return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gKey}')">
@@ -1380,7 +1385,8 @@ function openGameDetail(key) {
   if (!g) { showToast("Détail non disponible"); return; }
   const d = new Date(g.created_at);
   const date = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
-  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
+  const legacyIcons = {"Moon":"🌙","Star":"⭐","Comet":"☄️","Nova":"🌟","Supernova":"💫"};
+  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || legacyIcons[g.level] || "🎮";
   const words = g.words || [];
   const modeTag = g.is_daily ? "⭐ POP du jour" : g.level || "";
 
@@ -1552,7 +1558,7 @@ async function openDailyModal() {
   content.innerHTML = (alreadyPlayed
     ? `<div class="daily-played">Ton score aujourd'hui : <strong>${myScore} pts</strong><br>
        <span style="font-size:12px;margin-top:4px;display:block;">Reviens demain pour un nouveau tirage !</span></div>`
-    : `<button class="daily-start-btn" onclick="startDailyGame();closeModal('modal-daily')">🚀 JOUER LE POP DU JOUR</button>`)
+    : `<button class="daily-start-btn" onclick="closeModal('modal-daily');setTimeout(startDailyGame,200)">🚀 JOUER LE POP DU JOUR</button>`)
     + (lb.length ? `
     <div class="daily-scores">
       <div class="daily-scores-title">🏆 Classement du jour — ${lb.length} joueur${lb.length>1?"s":""}</div>
@@ -1562,11 +1568,12 @@ async function openDailyModal() {
 }
 
 function startDailyGame() {
-  isDailyMode=true; isDuelMode=false;
-  // Forcer le niveau Moon au départ (sera ajusté dynamiquement)
+  isDuelMode = false;
   state.diffIdx = 0;
   state.deck = seededShuffle([...LETTER_POOL], getDailySeed());
   startGame();
+  // Forcer isDailyMode APRÈS startGame (qui peut le remettre à false)
+  isDailyMode = true;
 }
 
 // ── DUEL ──
@@ -2089,7 +2096,10 @@ function startGame() {
   const gridEl = document.getElementById("grid");
   if (gridEl) gridEl.innerHTML = "";
 
-  state.deck = shuffle([...LETTER_POOL]);
+  // Ne pas écraser le deck si déjà défini (mode daily ou duel)
+  if (!state.deck || !state.deck.length) {
+    state.deck = shuffle([...LETTER_POOL]);
+  }
   state.grid = Array.from({length:20},(_,i) => emptyCell(i));
   state.selection = [];
   state.wordList = [];
@@ -2506,13 +2516,13 @@ function showBonusBadge(text) {
 // Event listeners via délégation — robuste même si Supabase charge en asynchrone
 function bindListeners() {
   const safe = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener("click", fn); };
-  safe("start-btn",   startGame);
+  safe("start-btn",   () => { isDailyMode=false; isDuelMode=false; state.deck=[]; startGame(); });
   safe("btn-clear",   clearSelection);
   safe("btn-validate", handleValidate);
   safe("btn-menu",    () => { if(state.intervalId) clearInterval(state.intervalId); buildSplash(); showScreen("splash"); });
   safe("btn-help",    () => showTutorial(0));
   safe("btn-help-splash", () => showTutorial(0));
-  safe("go-replay",   () => { isDailyMode=false; isDuelMode=false; duelId=null; startGame(); });
+  safe("go-replay",   () => { isDailyMode=false; isDuelMode=false; duelId=null; state.deck=[]; startGame(); });
   safe("btn-back",    () => { buildSplash(); showScreen("splash"); });
   safe("tuto-next",   () => { if(tutoStep<TUTO_STEPS-1){tutoStep++;renderTutoStep();}else{closeTutorial();} });
   safe("tuto-skip",   closeTutorial);
