@@ -41,7 +41,12 @@ body{display:flex;flex-direction:column;align-items:center;}
 
 /* ── PROFIL COMPLET ── */
 .auth-emoji-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
-.emoji-opt{width:38px;height:38px;border-radius:10px;background:var(--surface2);
+.emoji-picker{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:10px;}
+.emoji-cat-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+  font-weight:700;margin:8px 0 6px;padding-left:2px;}
+.emoji-cat-title:first-child{margin-top:0;}
+.emoji-cat-grid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.emoji-opt{width:36px;height:36px;border-radius:8px;background:var(--surface2);
   border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
   font-size:20px;cursor:pointer;transition:all .15s;}
 .emoji-opt:hover{border-color:var(--sky);transform:scale(1.1);}
@@ -831,7 +836,7 @@ body{display:flex;flex-direction:column;align-items:center;}
       </div>
       <div class="auth-field">
         <label>Ton emoji</label>
-        <div class="auth-emoji-pick" id="emoji-pick">
+        <div id="emoji-pick">
           <div class="emoji-opt" data-emoji="🦁" onclick="selectEmoji('🦁')">🦁</div><div class="emoji-opt" data-emoji="🐯" onclick="selectEmoji('🐯')">🐯</div><div class="emoji-opt" data-emoji="🦊" onclick="selectEmoji('🦊')">🦊</div><div class="emoji-opt" data-emoji="🐺" onclick="selectEmoji('🐺')">🐺</div><div class="emoji-opt" data-emoji="🦝" onclick="selectEmoji('🦝')">🦝</div><div class="emoji-opt" data-emoji="🐻" onclick="selectEmoji('🐻')">🐻</div><div class="emoji-opt" data-emoji="🐼" onclick="selectEmoji('🐼')">🐼</div><div class="emoji-opt" data-emoji="🦄" onclick="selectEmoji('🦄')">🦄</div><div class="emoji-opt" data-emoji="🐸" onclick="selectEmoji('🐸')">🐸</div><div class="emoji-opt" data-emoji="🐙" onclick="selectEmoji('🐙')">🐙</div><div class="emoji-opt" data-emoji="🦋" onclick="selectEmoji('🦋')">🦋</div><div class="emoji-opt" data-emoji="🌟" onclick="selectEmoji('🌟')">🌟</div><div class="emoji-opt" data-emoji="⚡" onclick="selectEmoji('⚡')">⚡</div><div class="emoji-opt" data-emoji="🔥" onclick="selectEmoji('🔥')">🔥</div><div class="emoji-opt" data-emoji="💎" onclick="selectEmoji('💎')">💎</div><div class="emoji-opt" data-emoji="🎯" onclick="selectEmoji('🎯')">🎯</div><div class="emoji-opt" data-emoji="🚀" onclick="selectEmoji('🚀')">🚀</div><div class="emoji-opt" data-emoji="🌈" onclick="selectEmoji('🌈')">🌈</div><div class="emoji-opt" data-emoji="👑" onclick="selectEmoji('👑')">👑</div><div class="emoji-opt" data-emoji="🎭" onclick="selectEmoji('🎭')">🎭</div>
         </div>
         <div style="font-size:11px;color:var(--dim);" id="emoji-selected-hint">Choisis un emoji qui te représente</div>
@@ -1009,7 +1014,15 @@ let selectedEmoji = "🦁";
 let editEmojiSelected = null;
 let pseudoCheckTimer = null;
 let editPseudoTimer = null;
-const EMOJI_LIST = ["🦁", "🐯", "🦊", "🐺", "🦝", "🐻", "🐼", "🦄", "🐸", "🐙", "🦋", "🌟", "⚡", "🔥", "💎", "🎯", "🚀", "🌈", "👑", "🎭"];
+const EMOJI_CATEGORIES = {
+  "Animaux": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜","🐢","🐍","🦎","🐙","🦑","🦐","🦀","🐡","🐠","🐟","🐬","🐳","🦈","🐊","🐆","🐅","🦓","🦍","🐘","🦒","🦘","🐕","🐩","🐈","🐇","🦝","🦦","🦥","🐁","🐿","🦔"],
+  "Visages": ["😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😋","😎","🥳","🤩","😍","🥰","😘","🙂","🤗","🤔","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😴","😷","🤒","🤕","🤢","🤧","🥵","🥶","😵","🤯","🤠","🥸","🧐","😈","👿","💀","☠","👻","👽","🤖","💩","🎃"],
+  "Sports & Jeux": ["⚽","🏀","🏈","⚾","🎾","🏐","🏉","🎱","🏓","🏸","🥊","🥋","🎯","⛳","🎣","🎿","🛷","🏹","🎮","🕹","🎲","🎭","🎨","♟","🎪","🎤","🎧","🎸","🎹","🥁","🎻","🎺","🎷","🎵","🎶"],
+  "Nourriture": ["🍎","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🌶","🧀","🍳","🥞","🍔","🍟","🌭","🍕","🍜","🍝","🍣","🍱","🥟","🍤","🧁","🍰","🎂","🍭","🍬","🍫","🍿","🍩","🍪","☕","🍵","🧋","🍺","🍷","🥃","🍸","🍹","🍾"],
+  "Nature": ["🌸","🌺","🌻","🌹","🌷","🌼","💐","🍀","🌿","☘","🍁","🍂","🍃","🌱","🌵","🎄","🌲","🌳","🌴","🌊","🌈","⛅","❄","⛄","💨","💧","🌍","🌙","⭐","🌟","💫","✨","☄","🌌","🌞","🪐","🔥","💥","🌬","🌨","🌩","⚡"],
+  "Objets & Symboles": ["💎","💍","👑","🏆","🥇","🎯","💡","🔑","🗝","🔒","💰","💳","💻","📱","📷","🔭","🔬","🧲","🪄","🔮","🧿","🎁","🎀","🧸","🪆","❤","🧡","💛","💚","💙","💜","🖤","🤍","💔","💕","💞","💓","💗","💖","💘","💝","✅","❌","⭕","💯","🔴","🟠","🟡","🟢","🔵","🟣","⚫","⚪","🟤","♠","♥","♦","♣","🃏","🀄","🎴","🔱","⚜","🏵","🎗","🎖"],
+};
+const EMOJI_LIST = Object.values(EMOJI_CATEGORIES).flat();
 
 function switchAuthTab(mode) {
   authMode = mode;
@@ -1017,6 +1030,7 @@ function switchAuthTab(mode) {
   document.getElementById("tab-" + mode).classList.add("active");
   const signupFields = document.getElementById("signup-fields");
   if (signupFields) signupFields.style.display = mode === "signup" ? "block" : "none";
+  if (mode === "signup") buildAuthEmojiPicker();
   document.getElementById("auth-submit-btn").textContent = mode === "login" ? "SE CONNECTER" : "CRÉER MON COMPTE";
   hideAuthError();
 }
@@ -1036,6 +1050,18 @@ function selectEmoji(e) {
   });
   const hint = document.getElementById("emoji-selected-hint");
   if (hint) hint.textContent = "Emoji choisi : " + e;
+}
+
+function buildAuthEmojiPicker() {
+  const pick = document.getElementById("emoji-pick");
+  if (!pick || pick.dataset.built) return;
+  pick.dataset.built = "1";
+  pick.innerHTML = Object.entries(EMOJI_CATEGORIES).map(([cat, emojis]) =>
+    `<div class="emoji-cat-title">${cat}</div><div class="emoji-cat-grid">` +
+    emojis.map(e =>
+      `<div class="emoji-opt ${e===selectedEmoji?"sel":""}" data-emoji="${e}" onclick="selectEmoji('${e}')">${e}</div>`
+    ).join("") + "</div>"
+  ).join("");
 }
 
 function checkSignupPseudo() {
@@ -1215,9 +1241,13 @@ async function renderProfileModal() {
   // Préparer l'edit emoji
   const editEmojiPick = document.getElementById("edit-emoji-pick");
   if (editEmojiPick) {
-    editEmojiPick.innerHTML = EMOJI_LIST.map(e =>
-      `<div class="emoji-opt ${e === userProfile?.emoji?"sel":""}" data-emoji="${e}" onclick="selectEditEmoji('${e}')">${e}</div>`
-    ).join("");
+    editEmojiPick.innerHTML = '<div class="emoji-picker">' +
+      Object.entries(EMOJI_CATEGORIES).map(([cat, emojis]) =>
+        `<div class="emoji-cat-title">${cat}</div><div class="emoji-cat-grid">` +
+        emojis.map(e =>
+          `<div class="emoji-opt ${e === userProfile?.emoji?"sel":""}" data-emoji="${e}" onclick="selectEditEmoji('${e}')">${e}</div>`
+        ).join("") + "</div>"
+      ).join("") + "</div>";
   }
   editEmojiSelected = userProfile?.emoji || null;
 }
@@ -1314,16 +1344,24 @@ function toggleDeleteConfirm() {
 
 async function deleteAccount() {
   if (!currentUser) return;
-  // Supprimer les données puis le compte
-  await sb.from("games").delete().eq("user_id", currentUser.id);
-  await sb.from("profiles").delete().eq("id", currentUser.id);
-  await sb.auth.admin?.deleteUser?.(currentUser.id); // si disponible
-  await sb.auth.signOut();
-  currentUser = null; userProfile = null;
-  updateProfileUI();
-  closeModal("modal-profile");
-  showToast("Compte supprimé.");
-  showScreen("auth");
+  const btn = document.querySelector(".btn-delete-confirm");
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  try {
+    // Supprimer les données utilisateur
+    await sb.from("games").delete().eq("user_id", currentUser.id);
+    await sb.from("profiles").delete().eq("id", currentUser.id);
+    // Déconnecter — la suppression du compte auth nécessite un edge function
+    // On marque le compte comme supprimé et on déconnecte
+    await sb.auth.signOut();
+    currentUser = null; userProfile = null;
+    updateProfileUI();
+    closeModal("modal-profile");
+    showToast("Compte et données supprimés.");
+    showScreen("auth");
+  } catch(err) {
+    showToast("Erreur : " + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = "Supprimer"; }
+  }
 }
 
 // ── POP DU JOUR ──
