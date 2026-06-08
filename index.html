@@ -38,6 +38,72 @@
 html,body{width:100%;min-height:100%;background:var(--bg);font-family:var(--font-ui);color:var(--text);overflow-x:hidden;}
 body{display:flex;flex-direction:column;align-items:center;}
 
+
+/* ── PROFIL COMPLET ── */
+.auth-emoji-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.emoji-opt{width:38px;height:38px;border-radius:10px;background:var(--surface2);
+  border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;transition:all .15s;}
+.emoji-opt:hover{border-color:var(--sky);transform:scale(1.1);}
+.emoji-opt.sel{border-color:var(--coral);background:rgba(255,71,87,.12);transform:scale(1.1);}
+
+/* Bottom nav pseudo */
+.nav-profile-content{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.nav-profile-emoji{font-size:18px;line-height:1;}
+.nav-profile-pseudo{font-size:8px;font-weight:700;color:var(--dim);max-width:54px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.nav-btn.active .nav-profile-pseudo{color:var(--coral);}
+
+/* Modal profil */
+.profile-hero{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:14px;}
+.profile-hero-emoji{font-size:44px;line-height:1;}
+.profile-hero-info{flex:1;}
+.profile-hero-pseudo{font-family:var(--font-title);font-size:24px;font-weight:900;
+  background:linear-gradient(135deg,var(--coral),var(--amber));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;}
+.profile-hero-email{font-size:11px;color:var(--dim);margin-top:3px;}
+
+/* Sections profil */
+.profile-section-title{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);font-weight:700;margin:16px 0 8px;}
+.profile-action-btn{width:100%;padding:12px 14px;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:12px;color:var(--text);
+  font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;
+  gap:10px;transition:all .2s;margin-bottom:8px;text-align:left;}
+.profile-action-btn:hover{border-color:var(--sky);}
+.profile-action-btn.danger{border-color:rgba(255,71,87,.3);color:var(--coral);}
+.profile-action-btn.danger:hover{background:rgba(255,71,87,.08);}
+
+/* Formulaire edit */
+.profile-edit-box{background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+  padding:16px;margin-bottom:12px;display:none;}
+.profile-edit-box.show{display:block;}
+.edit-row{display:flex;gap:8px;align-items:flex-start;}
+.edit-input{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;
+  padding:11px 13px;font-family:var(--font-ui);font-size:15px;font-weight:700;
+  color:var(--text);outline:none;transition:border .2s;}
+.edit-input:focus{border-color:var(--sky);}
+.edit-input.ok{border-color:var(--lime);}
+.edit-input.taken{border-color:var(--coral);}
+.edit-status{font-size:11px;height:14px;margin-top:4px;}
+.edit-status.ok{color:var(--lime);}
+.edit-status.taken{color:var(--coral);}
+.edit-status.checking{color:var(--dim);}
+.edit-save{background:linear-gradient(135deg,var(--lime),var(--sky));border:none;
+  border-radius:10px;color:#fff;font-family:var(--font-title);font-size:15px;
+  font-weight:900;padding:11px 14px;cursor:pointer;white-space:nowrap;}
+.edit-save:disabled{opacity:.35;cursor:default;}
+.delete-confirm{background:rgba(255,71,87,.08);border:1.5px solid rgba(255,71,87,.3);
+  border-radius:12px;padding:14px;margin-top:8px;display:none;}
+.delete-confirm.show{display:block;}
+.delete-confirm p{font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5;}
+.delete-confirm-btns{display:flex;gap:8px;}
+.btn-delete-confirm{flex:1;padding:11px;background:var(--coral);border:none;border-radius:10px;
+  color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+.btn-delete-cancel{flex:1;padding:11px;background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:10px;color:var(--dim);font-weight:700;font-size:14px;cursor:pointer;}
+
 /* ── LOADING ── */
 #loading{
   position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
@@ -617,7 +683,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
     <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-splash">👤</span><span class="nav-pseudo" id="nav-pseudo-splash">Profil</span></button>
+    <button class="nav-btn" id="nav-profile-btn-splash" onclick="openModal('modal-profile')"><div class="nav-profile-content"><span id="nav-profile-emoji-splash">👤</span><span class="nav-profile-pseudo" id="nav-profile-pseudo-splash">Profil</span></div></button>
   </div>
 </div>
 
@@ -663,7 +729,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" id="nav-daily" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" id="nav-duel" onclick="openDuelModal()" style="position:relative;"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span><span class="duel-indicator" id="duel-indicator"></span></button>
     <button class="nav-btn" id="nav-share" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" id="nav-profile" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon">👤</span><span class="nav-pseudo" id="nav-pseudo-game">Profil</span></button>
+    <button class="nav-btn" id="nav-profile" onclick="openModal('modal-profile')"><div class="nav-profile-content"><span id="nav-profile-emoji-game">👤</span><span class="nav-profile-pseudo" id="nav-profile-pseudo-game">Profil</span></div></button>
   </div>
 </div>
 
@@ -685,7 +751,7 @@ body{display:flex;flex-direction:column;align-items:center;}
     <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
     <button class="nav-btn" onclick="openShareModal()"><span class="nav-icon">📤</span><span class="nav-lbl">Partager</span></button>
-    <button class="nav-btn" onclick="openModal('modal-profile')"><span class="nav-icon" id="nav-profile-icon-go">👤</span><span class="nav-pseudo" id="nav-pseudo-go">Profil</span></button>
+    <button class="nav-btn" id="nav-profile-btn-go" onclick="openModal('modal-profile')"><div class="nav-profile-content"><span id="nav-profile-emoji-go">👤</span><span class="nav-profile-pseudo" id="nav-profile-pseudo-go">Profil</span></div></button>
   </div>
 </div>
 
@@ -754,9 +820,22 @@ body{display:flex;flex-direction:column;align-items:center;}
       <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Inscription</div>
     </div>
     <div class="auth-error" id="auth-error"></div>
-    <div class="auth-field" id="field-pseudo" style="display:none">
-      <label>Pseudo</label>
-      <input type="text" id="input-pseudo" placeholder="Ton pseudo de joueur" maxlength="20" autocomplete="off"/>
+    <!-- Champs inscription -->
+    <div id="signup-fields" style="display:none">
+      <div class="auth-field">
+        <label>Pseudo</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="input-pseudo" placeholder="Ton pseudo" maxlength="20" autocomplete="off" oninput="checkSignupPseudo()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:var(--font-ui);font-size:15px;color:var(--text);outline:none;" id="input-pseudo"/>
+        </div>
+        <div class="edit-status" id="signup-pseudo-status" style="margin-top:4px;"></div>
+      </div>
+      <div class="auth-field">
+        <label>Ton emoji</label>
+        <div class="auth-emoji-pick" id="emoji-pick">
+          <div class="emoji-opt" data-emoji="🦁" onclick="selectEmoji('🦁')">🦁</div><div class="emoji-opt" data-emoji="🐯" onclick="selectEmoji('🐯')">🐯</div><div class="emoji-opt" data-emoji="🦊" onclick="selectEmoji('🦊')">🦊</div><div class="emoji-opt" data-emoji="🐺" onclick="selectEmoji('🐺')">🐺</div><div class="emoji-opt" data-emoji="🦝" onclick="selectEmoji('🦝')">🦝</div><div class="emoji-opt" data-emoji="🐻" onclick="selectEmoji('🐻')">🐻</div><div class="emoji-opt" data-emoji="🐼" onclick="selectEmoji('🐼')">🐼</div><div class="emoji-opt" data-emoji="🦄" onclick="selectEmoji('🦄')">🦄</div><div class="emoji-opt" data-emoji="🐸" onclick="selectEmoji('🐸')">🐸</div><div class="emoji-opt" data-emoji="🐙" onclick="selectEmoji('🐙')">🐙</div><div class="emoji-opt" data-emoji="🦋" onclick="selectEmoji('🦋')">🦋</div><div class="emoji-opt" data-emoji="🌟" onclick="selectEmoji('🌟')">🌟</div><div class="emoji-opt" data-emoji="⚡" onclick="selectEmoji('⚡')">⚡</div><div class="emoji-opt" data-emoji="🔥" onclick="selectEmoji('🔥')">🔥</div><div class="emoji-opt" data-emoji="💎" onclick="selectEmoji('💎')">💎</div><div class="emoji-opt" data-emoji="🎯" onclick="selectEmoji('🎯')">🎯</div><div class="emoji-opt" data-emoji="🚀" onclick="selectEmoji('🚀')">🚀</div><div class="emoji-opt" data-emoji="🌈" onclick="selectEmoji('🌈')">🌈</div><div class="emoji-opt" data-emoji="👑" onclick="selectEmoji('👑')">👑</div><div class="emoji-opt" data-emoji="🎭" onclick="selectEmoji('🎭')">🎭</div>
+        </div>
+        <div style="font-size:11px;color:var(--dim);" id="emoji-selected-hint">Choisis un emoji qui te représente</div>
+      </div>
     </div>
     <div class="auth-field">
       <label>Email</label>
@@ -773,26 +852,64 @@ body{display:flex;flex-direction:column;align-items:center;}
 
 <!-- MODAL PROFIL -->
 <div class="modal-overlay hidden" id="modal-profile">
-  <div class="modal-sheet" style="position:relative;">
+  <div class="modal-sheet" style="position:relative;max-height:90vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
-    <div class="pseudo-edit-wrap" id="pseudo-edit-wrap">
-      <div class="pseudo-display" id="pseudo-display">…</div>
-      <button class="pseudo-edit-btn" onclick="togglePseudoEdit()">✏️ Modifier</button>
-    </div>
-    <div class="pseudo-input-wrap" id="pseudo-input-wrap">
-      <div class="pseudo-input-row">
-        <input class="pseudo-input" id="pseudo-new-input" placeholder="Nouveau pseudo" maxlength="20" autocomplete="off" oninput="checkPseudoAvailable()"/>
-        <button class="pseudo-save-btn" id="pseudo-save-btn" onclick="savePseudo()" disabled>OK</button>
+
+    <!-- Hero : emoji + pseudo + email -->
+    <div class="profile-hero" id="profile-hero">
+      <div class="profile-hero-emoji" id="profile-hero-emoji">👤</div>
+      <div class="profile-hero-info">
+        <div class="profile-hero-pseudo" id="profile-hero-pseudo">…</div>
+        <div class="profile-hero-email" id="profile-hero-email"></div>
       </div>
-      <div class="pseudo-status" id="pseudo-status"></div>
     </div>
+
+    <!-- Stats -->
     <div class="stats-grid" id="stats-grid"></div>
-    <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;font-weight:700;">Dernières parties</div>
+
+    <!-- Historique -->
+    <div class="profile-section-title">Meilleures parties</div>
     <div class="history-list" id="history-list"></div>
-    <button class="logout-btn" onclick="handleLogout()">Se déconnecter</button>
+
+    <!-- Modifier le profil -->
+    <div class="profile-section-title">Modifier mon profil</div>
+    <button class="profile-action-btn" onclick="toggleEditBox('edit-pseudo-box')">
+      ✏️ Changer mon pseudo
+    </button>
+    <div class="profile-edit-box" id="edit-pseudo-box">
+      <div class="edit-row">
+        <input class="edit-input" id="edit-pseudo-input" placeholder="Nouveau pseudo" maxlength="20" oninput="checkEditPseudo()"/>
+        <button class="edit-save" id="edit-pseudo-save" onclick="saveEditPseudo()" disabled>OK</button>
+      </div>
+      <div class="edit-status" id="edit-pseudo-status"></div>
+    </div>
+
+    <button class="profile-action-btn" onclick="toggleEditBox('edit-emoji-box')">
+      😊 Changer mon emoji
+    </button>
+    <div class="profile-edit-box" id="edit-emoji-box">
+      <div class="auth-emoji-pick" id="edit-emoji-pick"></div>
+      <button class="edit-save" id="edit-emoji-save" onclick="saveEditEmoji()" disabled style="width:100%;margin-top:10px;">Enregistrer</button>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="profile-section-title" style="color:rgba(255,71,87,.6);">Zone dangereuse</div>
+    <button class="profile-action-btn danger" onclick="toggleDeleteConfirm()">
+      🗑️ Supprimer mon compte
+    </button>
+    <div class="delete-confirm" id="delete-confirm">
+      <p>Cette action est <strong>irréversible</strong>. Toutes tes parties et ton profil seront supprimés définitivement.</p>
+      <div class="delete-confirm-btns">
+        <button class="btn-delete-cancel" onclick="toggleDeleteConfirm()">Annuler</button>
+        <button class="btn-delete-confirm" onclick="deleteAccount()">Supprimer</button>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="handleLogout()" style="margin-top:16px;">Se déconnecter</button>
   </div>
 </div>
+
 
 <!-- MODAL POP DU JOUR -->
 <div class="modal-overlay hidden" id="modal-daily">
@@ -888,12 +1005,18 @@ async function initApp() {
 
 // ── AUTH ──
 let authMode = "login";
+let selectedEmoji = "🦁";
+let editEmojiSelected = null;
+let pseudoCheckTimer = null;
+let editPseudoTimer = null;
+const EMOJI_LIST = ["🦁", "🐯", "🦊", "🐺", "🦝", "🐻", "🐼", "🦄", "🐸", "🐙", "🦋", "🌟", "⚡", "🔥", "💎", "🎯", "🚀", "🌈", "👑", "🎭"];
 
 function switchAuthTab(mode) {
   authMode = mode;
   document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
   document.getElementById("tab-" + mode).classList.add("active");
-  document.getElementById("field-pseudo").style.display = mode === "signup" ? "block" : "none";
+  const signupFields = document.getElementById("signup-fields");
+  if (signupFields) signupFields.style.display = mode === "signup" ? "block" : "none";
   document.getElementById("auth-submit-btn").textContent = mode === "login" ? "SE CONNECTER" : "CRÉER MON COMPTE";
   hideAuthError();
 }
@@ -906,21 +1029,62 @@ function hideAuthError() {
   document.getElementById("auth-error").classList.remove("show");
 }
 
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll(".emoji-opt").forEach(el => {
+    el.classList.toggle("sel", el.dataset.emoji === e);
+  });
+  const hint = document.getElementById("emoji-selected-hint");
+  if (hint) hint.textContent = "Emoji choisi : " + e;
+}
+
+function checkSignupPseudo() {
+  const input = document.getElementById("input-pseudo");
+  const status = document.getElementById("signup-pseudo-status");
+  const val = input.value.trim();
+  if (val.length < 3) {
+    input.style.borderColor = val.length > 0 ? "var(--coral)" : "var(--border)";
+    status.textContent = val.length > 0 ? "3 caractères minimum" : "";
+    status.className = "edit-status taken";
+    return;
+  }
+  status.textContent = "Vérification…";
+  status.className = "edit-status checking";
+  clearTimeout(pseudoCheckTimer);
+  pseudoCheckTimer = setTimeout(async () => {
+    const { data } = await sb.from("profiles").select("id").eq("pseudo", val).maybeSingle();
+    if (data) {
+      input.style.borderColor = "var(--coral)";
+      status.textContent = "❌ Pseudo déjà pris";
+      status.className = "edit-status taken";
+    } else {
+      input.style.borderColor = "var(--lime)";
+      status.textContent = "✓ Disponible !";
+      status.className = "edit-status ok";
+    }
+  }, 500);
+}
+
 async function handleAuth() {
   const email    = document.getElementById("input-email").value.trim();
   const password = document.getElementById("input-password").value;
-  const pseudo   = document.getElementById("input-pseudo").value.trim();
+  const pseudo   = document.getElementById("input-pseudo")?.value.trim();
   hideAuthError();
   if (!email || !password) { showAuthError("Email et mot de passe requis."); return; }
   const btn = document.getElementById("auth-submit-btn");
   btn.textContent = "…"; btn.disabled = true;
   try {
     if (authMode === "signup") {
-      if (!pseudo) { showAuthError("Choisis un pseudo."); return; }
+      if (!pseudo || pseudo.length < 3) { showAuthError("Choisis un pseudo (3 caractères min)."); return; }
+      // Vérifier dispo pseudo
+      const { data: existing } = await sb.from("profiles").select("id").eq("pseudo", pseudo).maybeSingle();
+      if (existing) { showAuthError("Ce pseudo est déjà pris."); return; }
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) throw error;
       currentUser = data.user;
-      await sb.from("profiles").insert({ id: currentUser.id, pseudo, total_games:0, best_score:0 });
+      await sb.from("profiles").insert({
+        id: currentUser.id, pseudo, emoji: selectedEmoji, best_score:0, total_games:0
+      });
       await loadUserProfile();
     } else {
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -945,6 +1109,7 @@ async function handleAuth() {
 async function handleLogout() {
   await sb.auth.signOut();
   currentUser = null; userProfile = null;
+  updateProfileUI();
   closeModal("modal-profile");
   showScreen("auth");
 }
@@ -958,204 +1123,207 @@ async function loadUserProfile() {
 }
 
 function updateProfileUI() {
+  const emoji  = userProfile?.emoji  || "👤";
   const pseudo = userProfile?.pseudo || null;
-  const initial = pseudo ? pseudo[0].toUpperCase() : "👤";
-  // Mettre à jour les icônes (initiale si connecté)
-  ["nav-profile-icon","nav-profile-icon-splash","nav-profile-icon-go"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = initial;
-  });
-  // Mettre à jour les pseudos dans la nav
-  ["nav-pseudo-splash","nav-pseudo-game","nav-pseudo-go"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = pseudo || "Profil";
+  const label  = pseudo ? (pseudo.length > 7 ? pseudo.slice(0,7)+"…" : pseudo) : "Profil";
+
+  // Mettre à jour les 3 boutons nav
+  [
+    ["nav-profile-emoji-splash","nav-profile-pseudo-splash"],
+    ["nav-profile-emoji-game",  "nav-profile-pseudo-game"],
+    ["nav-profile-emoji-go",    "nav-profile-pseudo-go"],
+  ].forEach(([eid, pid]) => {
+    const eEl = document.getElementById(eid);
+    const pEl = document.getElementById(pid);
+    if (eEl) eEl.textContent = emoji;
+    if (pEl) pEl.textContent = label;
   });
 }
 
-// ── MODALS ──
+// ── PROFIL MODAL ──
 function openModal(id) {
   document.getElementById(id).classList.remove("hidden");
-  if (id === "modal-profile") {
-    // Afficher le pseudo immédiatement sans attendre le chargement async
-    renderProfileModal();
-  }
+  if (id === "modal-profile") renderProfileModal();
 }
 function closeModal(id) {
   document.getElementById(id).classList.add("hidden");
 }
 
-// ── PROFIL ──
 async function renderProfileModal() {
-  const statsGrid = document.getElementById("stats-grid");
-  const histList  = document.getElementById("history-list");
-  const logoutBtn = document.querySelector(".logout-btn");
-  
   if (!currentUser) {
-      statsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);font-size:13px;">
+    document.getElementById("profile-hero-emoji").textContent = "👤";
+    document.getElementById("profile-hero-pseudo").textContent = "Non connecté";
+    document.getElementById("profile-hero-email").textContent = "";
+    document.getElementById("stats-grid").innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);font-size:13px;">
       Connecte-toi pour sauvegarder tes scores !<br><br>
       <button class="auth-btn" style="font-size:14px;padding:11px;" onclick="closeModal('modal-profile');showScreen('auth')">Se connecter</button>
     </div>`;
-    histList.innerHTML = "";
-    if (logoutBtn) logoutBtn.style.display = "none";
+    document.getElementById("history-list").innerHTML = "";
+    document.querySelector(".logout-btn").style.display = "none";
+    document.querySelectorAll(".profile-section-title,.profile-action-btn,.delete-confirm").forEach(el => el.style.display = "none");
     return;
   }
-  if (logoutBtn) logoutBtn.style.display = "block";
 
-  // Recharger le profil si pas encore disponible
-  if (!userProfile && currentUser) await loadUserProfile();
-  const pseudo = userProfile?.pseudo || currentUser?.email?.split("@")[0] || "Mon profil";
-  const pseudoDisplay = document.getElementById("pseudo-display");
-  if (pseudoDisplay) pseudoDisplay.textContent = pseudo;
-  const pseudoEditWrap = document.getElementById("pseudo-edit-wrap");
-  if (pseudoEditWrap) pseudoEditWrap.style.display = currentUser ? "flex" : "none";
+  if (!userProfile) await loadUserProfile();
   updateProfileUI();
 
+  document.querySelector(".logout-btn").style.display = "block";
+  document.querySelectorAll(".profile-section-title,.profile-action-btn").forEach(el => el.style.display = "");
+
+  // Hero
+  document.getElementById("profile-hero-emoji").textContent = userProfile?.emoji || "👤";
+  document.getElementById("profile-hero-pseudo").textContent = userProfile?.pseudo || "—";
+  document.getElementById("profile-hero-email").textContent = currentUser.email;
+
+  // Stats
   const { data: games } = await sb.from("games")
     .select("*").eq("user_id", currentUser.id).order("score",{ascending:false}).limit(50);
-
   const total = games?.length || 0;
   const best  = games ? Math.max(0,...games.map(g=>g.score)) : 0;
   const avg   = total ? Math.round(games.reduce((s,g)=>s+g.score,0)/total) : 0;
   const words = games ? games.reduce((s,g)=>s+(g.word_count||0),0) : 0;
-
-  statsGrid.innerHTML = `
+  document.getElementById("stats-grid").innerHTML = `
     <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Parties</div></div>
     <div class="stat-card"><div class="stat-val">${best}</div><div class="stat-lbl">Meilleur score</div></div>
     <div class="stat-card"><div class="stat-val">${avg}</div><div class="stat-lbl">Score moyen</div></div>
     <div class="stat-card"><div class="stat-val">${words}</div><div class="stat-lbl">Mots trouvés</div></div>`;
 
+  // Historique
+  const histList = document.getElementById("history-list");
   if (!games || !games.length) {
     histList.innerHTML = `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucune partie</div>`;
-    return;
+  } else {
+    histList.innerHTML = games.slice(0,20).map(g => {
+      const d = new Date(g.created_at);
+      const date = d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+      const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
+      const gJson = encodeURIComponent(JSON.stringify(g));
+      return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gJson}')">
+        <div class="history-left">
+          <div class="history-score">${g.score} pts</div>
+          <div class="history-meta">${g.word_count||0} mot${(g.word_count||0)>1?"s":""} · ${g.level||""}</div>
+        </div>
+        <div class="history-right">
+          <div class="history-level">${icon}</div>
+          <div class="history-date">${date}</div>
+          <div style="font-size:9px;color:var(--dim);margin-top:2px;">voir →</div>
+        </div>
+      </div>`;
+    }).join("");
   }
-  histList.innerHTML = games.slice(0,20).map((g,i) => {
-    const d = new Date(g.created_at);
-    const date = d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
-    const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
-    const gJson = encodeURIComponent(JSON.stringify(g));
-    return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gJson}')">
-      <div class="history-left">
-        <div class="history-score">${g.score} pts</div>
-        <div class="history-meta">${g.word_count||0} mot${(g.word_count||0)>1?"s":""} · ${g.level||""}</div>
-      </div>
-      <div class="history-right">
-        <div class="history-level">${icon}</div>
-        <div class="history-date">${date}</div>
-        <div style="font-size:9px;color:var(--dim);margin-top:2px;">voir →</div>
-      </div>
-    </div>`;
-  }).join("");
+
+  // Préparer l'edit emoji
+  const editEmojiPick = document.getElementById("edit-emoji-pick");
+  if (editEmojiPick) {
+    editEmojiPick.innerHTML = EMOJI_LIST.map(e =>
+      `<div class="emoji-opt ${e === userProfile?.emoji?"sel":""}" data-emoji="${e}" onclick="selectEditEmoji('${e}')">${e}</div>`
+    ).join("");
+  }
+  editEmojiSelected = userProfile?.emoji || null;
 }
 
-// ── ÉDITION PSEUDO ──
-let pseudoCheckTimer = null;
-
-function togglePseudoEdit() {
-  const wrap = document.getElementById("pseudo-input-wrap");
-  const input = document.getElementById("pseudo-new-input");
-  const isShown = wrap.classList.contains("show");
-  wrap.classList.toggle("show", !isShown);
-  if (!isShown) { input.value = userProfile?.pseudo || ""; input.focus(); checkPseudoAvailable(); }
+// ── EDIT PSEUDO ──
+function toggleEditBox(id) {
+  document.querySelectorAll(".profile-edit-box").forEach(el => {
+    if (el.id !== id) el.classList.remove("show");
+  });
+  document.getElementById(id).classList.toggle("show");
 }
 
-function checkPseudoAvailable() {
-  const input = document.getElementById("pseudo-new-input");
-  const status = document.getElementById("pseudo-status");
-  const saveBtn = document.getElementById("pseudo-save-btn");
+function checkEditPseudo() {
+  const input  = document.getElementById("edit-pseudo-input");
+  const status = document.getElementById("edit-pseudo-status");
+  const save   = document.getElementById("edit-pseudo-save");
   const val = input.value.trim();
   if (val.length < 3) {
-    input.className = "pseudo-input";
+    input.className = "edit-input";
     status.textContent = val.length > 0 ? "3 caractères minimum" : "";
-    status.className = "pseudo-status taken";
-    saveBtn.disabled = true;
+    status.className = "edit-status taken";
+    save.disabled = true;
     return;
   }
   if (val === userProfile?.pseudo) {
-    input.className = "pseudo-input ok";
+    input.className = "edit-input ok";
     status.textContent = "Pseudo actuel";
-    status.className = "pseudo-status ok";
-    saveBtn.disabled = true;
+    status.className = "edit-status ok";
+    save.disabled = true;
     return;
   }
   status.textContent = "Vérification…";
-  status.className = "pseudo-status checking";
-  input.className = "pseudo-input";
-  saveBtn.disabled = true;
-  clearTimeout(pseudoCheckTimer);
-  pseudoCheckTimer = setTimeout(async () => {
+  status.className = "edit-status checking";
+  save.disabled = true;
+  clearTimeout(editPseudoTimer);
+  editPseudoTimer = setTimeout(async () => {
     const { data } = await sb.from("profiles").select("id").eq("pseudo", val).maybeSingle();
     if (data) {
-      input.className = "pseudo-input taken";
+      input.className = "edit-input taken";
       status.textContent = "❌ Pseudo déjà pris";
-      status.className = "pseudo-status taken";
-      saveBtn.disabled = true;
+      status.className = "edit-status taken";
+      save.disabled = true;
     } else {
-      input.className = "pseudo-input ok";
+      input.className = "edit-input ok";
       status.textContent = "✓ Disponible !";
-      status.className = "pseudo-status ok";
-      saveBtn.disabled = false;
+      status.className = "edit-status ok";
+      save.disabled = false;
     }
   }, 500);
 }
 
-async function savePseudo() {
-  const val = document.getElementById("pseudo-new-input").value.trim();
-  const saveBtn = document.getElementById("pseudo-save-btn");
+async function saveEditPseudo() {
+  const val = document.getElementById("edit-pseudo-input").value.trim();
   if (!val || val.length < 3 || !currentUser) return;
-  saveBtn.disabled = true; saveBtn.textContent = "…";
+  const btn = document.getElementById("edit-pseudo-save");
+  btn.disabled = true; btn.textContent = "…";
   const { error } = await sb.from("profiles").update({ pseudo: val }).eq("id", currentUser.id);
-  if (error) {
-    document.getElementById("pseudo-status").textContent = "Erreur, réessaie";
-    document.getElementById("pseudo-status").className = "pseudo-status taken";
-    saveBtn.textContent = "OK"; saveBtn.disabled = false;
-    return;
-  }
+  if (error) { showToast("Erreur, réessaie"); btn.textContent="OK"; btn.disabled=false; return; }
   if (userProfile) userProfile.pseudo = val;
-  document.getElementById("pseudo-input-wrap").classList.remove("show");
-  document.getElementById("pseudo-display").textContent = val;
-  // profile-title supprimé
+  document.getElementById("profile-hero-pseudo").textContent = val;
   updateProfileUI();
+  document.getElementById("edit-pseudo-box").classList.remove("show");
   showToast("Pseudo mis à jour !");
-  saveBtn.textContent = "OK";
+  btn.textContent = "OK";
 }
 
-function openGameDetail(encodedGame) {
-  const g = JSON.parse(decodeURIComponent(encodedGame));
-  const d = new Date(g.created_at);
-  const date = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
-  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
-  const words = g.words || [];
-  const modeTag = g.is_daily ? "⭐ POP du jour" : g.level || "";
-
-  document.getElementById("game-detail-content").innerHTML = `
-    <div class="detail-header">
-      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">${modeTag} · ${date}</div>
-      <div class="detail-score">${g.score}</div>
-      <div class="detail-meta">${icon} ${g.level || ""} · ${g.word_count||0} mot${(g.word_count||0)>1?"s":""} trouvé${(g.word_count||0)>1?"s":""}</div>
-    </div>
-    ${words.length > 0 ? `
-    <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:700;">
-      Mots trouvés
-    </div>
-    <div class="detail-words">
-      ${words.map(w=>`<span class="detail-chip">${w}</span>`).join("")}
-    </div>` : `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucun mot enregistré</div>`}`;
-
-  closeModal("modal-profile");
-  openModal("modal-game-detail");
-}
-
-async function saveGame(score, wordList, level) {
-  if (!currentUser) return;
-  await sb.from("games").insert({
-    user_id: currentUser.id, score, word_count: wordList.length,
-    words: wordList, level, is_daily: isDailyMode,
-    created_at: new Date().toISOString()
+// ── EDIT EMOJI ──
+function selectEditEmoji(e) {
+  editEmojiSelected = e;
+  document.querySelectorAll("#edit-emoji-pick .emoji-opt").forEach(el => {
+    el.classList.toggle("sel", el.dataset.emoji === e);
   });
-  if (userProfile && score > (userProfile.best_score||0)) {
-    await sb.from("profiles").update({best_score:score}).eq("id",currentUser.id);
-    userProfile.best_score = score;
-  }
+  document.getElementById("edit-emoji-save").disabled = (e === userProfile?.emoji);
+}
+
+async function saveEditEmoji() {
+  if (!editEmojiSelected || !currentUser) return;
+  const btn = document.getElementById("edit-emoji-save");
+  btn.disabled = true; btn.textContent = "…";
+  const { error } = await sb.from("profiles").update({ emoji: editEmojiSelected }).eq("id", currentUser.id);
+  if (error) { showToast("Erreur, réessaie"); btn.textContent="Enregistrer"; btn.disabled=false; return; }
+  if (userProfile) userProfile.emoji = editEmojiSelected;
+  document.getElementById("profile-hero-emoji").textContent = editEmojiSelected;
+  updateProfileUI();
+  document.getElementById("edit-emoji-box").classList.remove("show");
+  showToast("Emoji mis à jour !");
+  btn.textContent = "Enregistrer";
+}
+
+// ── SUPPRESSION COMPTE ──
+function toggleDeleteConfirm() {
+  document.getElementById("delete-confirm").classList.toggle("show");
+}
+
+async function deleteAccount() {
+  if (!currentUser) return;
+  // Supprimer les données puis le compte
+  await sb.from("games").delete().eq("user_id", currentUser.id);
+  await sb.from("profiles").delete().eq("id", currentUser.id);
+  await sb.auth.admin?.deleteUser?.(currentUser.id); // si disponible
+  await sb.auth.signOut();
+  currentUser = null; userProfile = null;
+  updateProfileUI();
+  closeModal("modal-profile");
+  showToast("Compte supprimé.");
+  showScreen("auth");
 }
 
 // ── POP DU JOUR ──
