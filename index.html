@@ -807,11 +807,11 @@ body{display:flex;flex-direction:column;align-items:center;}
       <div class="tuto-icon">💫</div>
       <div class="tuto-title">Choisis ton niveau</div>
       <div class="tuto-text">
-        🌙 <strong>Moon</strong> — 1 carte / 5s<br>
-        ⭐ <strong>Star</strong> — 1 carte / 4s<br>
-        ☄️ <strong>Comet</strong> — 1 carte / 3s<br>
-        🌟 <strong>Nova</strong> — 1 carte / 2s<br>
-        💫 <strong>Supernova</strong> — 1 carte / 1s<br><br>
+        🐌 <strong>Slow</strong> — 1 carte / 5s<br>
+        🐢 <strong>Cool</strong> — 1 carte / 4s<br>
+        🐟 <strong>Sharp</strong> — 1 carte / 3s<br>
+        🐎 <strong>Fast</strong> — 1 carte / 2s<br>
+        🐦‍🔥 <strong>Insane</strong> — 1 carte / 1s<br><br>
         Le dictionnaire utilisé est l'<strong>ODS</strong> (dictionnaire officiel du Scrabble français). Bonne chance !
       </div>
     </div>
@@ -1726,11 +1726,11 @@ const LETTER_POOL = [
 ];
 
 const DIFFICULTY = [
-  { label:"Moon",      icon:"🌙", ms:5000 },
-  { label:"Star",      icon:"⭐", ms:4000 },
-  { label:"Comet",     icon:"☄️",  ms:3000 },
-  { label:"Nova",      icon:"🌟", ms:2000 },
-  { label:"Supernova", icon:"💫", ms:1000 },
+  { label:"Slow",   icon:"🐌",    ms:5000 },
+  { label:"Cool",   icon:"🐢",    ms:4000 },
+  { label:"Sharp",  icon:"🐟",    ms:3000 },
+  { label:"Fast",   icon:"🐎",    ms:2000 },
+  { label:"Insane", icon:"🐦‍🔥", ms:1000 },
 ];
 
 const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
@@ -2113,15 +2113,15 @@ function startGame() {
   // Phase 1 : 0-99 pts → 🌙 Moon (5s), Phase 2 : 100-199 pts → ⭐ Star (4s), Phase 3 : 200+ pts → ☄️ Comet (3s)
   function getDailyMs() {
     if (!isDailyMode) return DIFFICULTY[state.diffIdx].ms;
-    if (state.score >= 200) return 3000;
-    if (state.score >= 100) return 4000;
-    return 5000;
+    if (state.score >= 200) return 3000; // Sharp
+    if (state.score >= 100) return 4000; // Cool
+    return 5000; // Slow
   }
   function getDailyPhaseIcon() {
     if (!isDailyMode) return null;
-    if (state.score >= 200) return { icon:"☄️", label:"Comet" };
-    if (state.score >= 100) return { icon:"⭐", label:"Star" };
-    return { icon:"🌙", label:"Moon" };
+    if (state.score >= 200) return { icon:"🐟", label:"Sharp" };
+    if (state.score >= 100) return { icon:"🐢", label:"Cool" };
+    return { icon:"🐌", label:"Slow" };
   }
 
   let ms = getDailyMs();
