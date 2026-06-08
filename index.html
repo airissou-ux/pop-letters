@@ -1000,6 +1000,7 @@ let isDuelMode  = false;
 let duelId      = null;
 let duelChannel = null;
 let lastGameResult = null;
+const gameDetailStore = {}; // stockage temporaire des parties pour le détail
 
 // Chargement SDK Supabase
 const _sbScript = document.createElement("script");
@@ -1261,8 +1262,9 @@ async function renderProfileModal() {
       const d = new Date(g.created_at);
       const date = d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
       const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
-      const gJson = encodeURIComponent(JSON.stringify(g));
-      return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gJson}')">
+      const gKey = "game_" + i;
+      gameDetailStore[gKey] = g;
+      return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gKey}')">
         <div class="history-left">
           <div class="history-score">${g.score} pts</div>
           <div class="history-meta">${g.word_count||0} mot${(g.word_count||0)>1?"s":""} · ${g.level||""}</div>
@@ -1373,6 +1375,34 @@ async function saveEditEmoji() {
   document.getElementById("edit-emoji-box").classList.remove("show");
   showToast("Emoji mis à jour !");
   btn.textContent = "Enregistrer";
+}
+
+// ── GAME DETAIL ──
+function openGameDetail(key) {
+  const g = gameDetailStore[key];
+  if (!g) { showToast("Détail non disponible"); return; }
+  const d = new Date(g.created_at);
+  const date = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
+  const words = g.words || [];
+  const modeTag = g.is_daily ? "⭐ POP du jour" : g.level || "";
+
+  document.getElementById("game-detail-content").innerHTML = `
+    <div class="detail-header">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">${modeTag} · ${date}</div>
+      <div class="detail-score">${g.score}</div>
+      <div class="detail-meta">${icon} ${g.level||""} · ${g.word_count||0} mot${(g.word_count||0)>1?"s":""} trouvé${(g.word_count||0)>1?"s":""}</div>
+    </div>
+    ${words.length > 0 ? `
+    <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:700;">
+      Mots trouvés
+    </div>
+    <div class="detail-words">
+      ${words.map(w=>`<span class="detail-chip">${w}</span>`).join("")}
+    </div>` : `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucun mot enregistré</div>`}`;
+
+  closeModal("modal-profile");
+  document.getElementById("modal-game-detail").classList.remove("hidden");
 }
 
 // ── SAVE GAME ──
