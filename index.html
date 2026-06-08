@@ -1436,11 +1436,29 @@ async function openDailyModal() {
     if (data) { alreadyPlayed=true; myScore=data.score; }
   }
 
-  const {data:scores} = await sb.from("games")
-    .select("score, user_id, profiles(pseudo, emoji)").eq("is_daily",true)
-    .gte("created_at",dateStr).order("score",{ascending:false}).limit(100);
+  // Requête 1 : scores du jour
+  const {data:rawScores} = await sb.from("games")
+    .select("score, user_id")
+    .eq("is_daily", true)
+    .gte("created_at", dateStr + "T00:00:00")
+    .order("score", {ascending: false})
+    .limit(100);
 
-  const lb = scores || [];
+  // Requête 2 : profils des joueurs
+  const userIds = [...new Set((rawScores||[]).map(s => s.user_id).filter(Boolean))];
+  let profilesMap = {};
+  if (userIds.length) {
+    const {data:profs} = await sb.from("profiles")
+      .select("id, pseudo, emoji").in("id", userIds);
+    (profs||[]).forEach(p => { profilesMap[p.id] = p; });
+  }
+
+  // Fusionner
+  const lb = (rawScores||[]).map(s => ({
+    ...s,
+    pseudo: profilesMap[s.user_id]?.pseudo || "Anonyme",
+    emoji:  profilesMap[s.user_id]?.emoji  || "👤",
+  }));
   const medals = ["🥇","🥈","🥉"];
 
   // Construire le podium (top 3)
@@ -1449,8 +1467,8 @@ async function openDailyModal() {
       ${[0,1,2].filter(i => lb[i]).map(i => {
         const s = lb[i];
         const isMe = currentUser && s.user_id === currentUser.id;
-        const pseudo = s.profiles?.pseudo || "Anonyme";
-        const emoji  = s.profiles?.emoji  || "👤";
+        const pseudo = s.pseudo || "Anonyme";
+        const emoji  = s.emoji  || "👤";
         const medal  = ["gold","silver","bronze"][i];
         return `<div class="lb-podium-item ${medal}${isMe?" lb-podium-me":""}">
           <div class="lb-podium-medal">${medals[i]}</div>
@@ -1466,8 +1484,8 @@ async function openDailyModal() {
     <div class="daily-lb-wrap">
       ${lb.slice(3).map((s,i) => {
         const isMe = currentUser && s.user_id === currentUser.id;
-        const pseudo = s.profiles?.pseudo || "Anonyme";
-        const emoji  = s.profiles?.emoji  || "👤";
+        const pseudo = s.pseudo || "Anonyme";
+        const emoji  = s.emoji  || "👤";
         return `<div class="leaderboard-item ${isMe?"lb-me":""}">
           <div class="lb-rank">${i+4}</div>
           <div class="lb-emoji">${emoji}</div>
