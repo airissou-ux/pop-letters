@@ -500,6 +500,30 @@ body{display:flex;flex-direction:column;align-items:center;}
 .prog-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s;}
 .prog-dot.on{background:var(--coral);box-shadow:0 0 6px var(--coral);}
 
+/* Modal détail partie */
+#modal-game-detail .modal-sheet{max-height:85vh;}
+.detail-header{text-align:center;margin-bottom:16px;}
+.detail-score{font-family:var(--font-title);font-size:56px;font-weight:900;
+  background:linear-gradient(135deg,var(--coral),var(--amber),var(--lime));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.detail-meta{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.08em;}
+.detail-words{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.detail-chip{background:var(--surface2);border:1px solid rgba(0,180,216,.25);border-radius:8px;
+  font-family:var(--font-letter);font-size:12px;font-weight:800;padding:3px 9px;
+  color:var(--sky);text-transform:uppercase;}
+
+/* Modal détail partie */
+#modal-game-detail .modal-sheet{max-height:85vh;}
+.detail-header{text-align:center;margin-bottom:16px;}
+.detail-score{font-family:var(--font-title);font-size:56px;font-weight:900;
+  background:linear-gradient(135deg,var(--coral),var(--amber),var(--lime));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.detail-meta{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.08em;}
+.detail-words{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.detail-chip{background:var(--surface2);border:1px solid rgba(0,180,216,.25);border-radius:8px;
+  font-family:var(--font-letter);font-size:12px;font-weight:800;padding:3px 9px;
+  color:var(--sky);text-transform:uppercase;}
+
 /* Indicateur duel actif */
 .duel-indicator{position:absolute;top:-3px;right:-3px;width:10px;height:10px;
   border-radius:50%;background:var(--lime);border:2px solid var(--bg);display:none;}
@@ -731,6 +755,24 @@ body{display:flex;flex-direction:column;align-items:center;}
   </div>
 </div>
 
+<!-- MODAL DÉTAIL PARTIE -->
+<div class="modal-overlay hidden" id="modal-game-detail">
+  <div class="modal-sheet" style="position:relative;">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('modal-game-detail')">✕</button>
+    <div id="game-detail-content"></div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL PARTIE -->
+<div class="modal-overlay hidden" id="modal-game-detail">
+  <div class="modal-sheet" style="position:relative;">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('modal-game-detail')">✕</button>
+    <div id="game-detail-content"></div>
+  </div>
+</div>
+
 <!-- MODAL PARTAGE -->
 <div class="modal-overlay hidden" id="modal-share">
   <div class="modal-sheet" style="position:relative;">
@@ -894,7 +936,7 @@ async function renderProfileModal() {
   title.textContent = userProfile?.pseudo || "Mon profil";
 
   const { data: games } = await sb.from("games")
-    .select("*").eq("user_id", currentUser.id).order("created_at",{ascending:false}).limit(50);
+    .select("*").eq("user_id", currentUser.id).order("score",{ascending:false}).limit(50);
 
   const total = games?.length || 0;
   const best  = games ? Math.max(0,...games.map(g=>g.score)) : 0;
@@ -911,18 +953,49 @@ async function renderProfileModal() {
     histList.innerHTML = `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucune partie</div>`;
     return;
   }
-  histList.innerHTML = games.slice(0,10).map(g => {
+  histList.innerHTML = games.slice(0,20).map((g,i) => {
     const d = new Date(g.created_at);
     const date = d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
     const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
-    return `<div class="history-item">
+    const gJson = encodeURIComponent(JSON.stringify(g));
+    return `<div class="history-item" style="cursor:pointer;" onclick="openGameDetail('${gJson}')">
       <div class="history-left">
         <div class="history-score">${g.score} pts</div>
         <div class="history-meta">${g.word_count||0} mot${(g.word_count||0)>1?"s":""} · ${g.level||""}</div>
       </div>
-      <div class="history-right"><div class="history-level">${icon}</div><div class="history-date">${date}</div></div>
+      <div class="history-right">
+        <div class="history-level">${icon}</div>
+        <div class="history-date">${date}</div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px;">voir →</div>
+      </div>
     </div>`;
   }).join("");
+}
+
+function openGameDetail(encodedGame) {
+  const g = JSON.parse(decodeURIComponent(encodedGame));
+  const d = new Date(g.created_at);
+  const date = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || "🌙";
+  const words = g.words || [];
+  const modeTag = g.is_daily ? "⭐ POP du jour" : g.level || "";
+
+  document.getElementById("game-detail-content").innerHTML = `
+    <div class="detail-header">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">${modeTag} · ${date}</div>
+      <div class="detail-score">${g.score}</div>
+      <div class="detail-meta">${icon} ${g.level || ""} · ${g.word_count||0} mot${(g.word_count||0)>1?"s":""} trouvé${(g.word_count||0)>1?"s":""}</div>
+    </div>
+    ${words.length > 0 ? `
+    <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:700;">
+      Mots trouvés
+    </div>
+    <div class="detail-words">
+      ${words.map(w=>`<span class="detail-chip">${w}</span>`).join("")}
+    </div>` : `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucun mot enregistré</div>`}`;
+
+  closeModal("modal-profile");
+  openModal("modal-game-detail");
 }
 
 async function saveGame(score, wordList, level) {
