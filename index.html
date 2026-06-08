@@ -489,6 +489,7 @@ body{display:flex;flex-direction:column;align-items:center;}
 ══════════════════════════════════ */
 .bottom-nav{width:100%;display:flex;align-items:center;justify-content:space-around;
   padding:8px 0 4px;border-top:1px solid var(--border);background:var(--bg);}
+#splash .bottom-nav{background:transparent;border-top:none;}
 .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;
   background:none;border:none;cursor:pointer;padding:4px 12px;transition:all .2s;min-width:50px;}
 .nav-btn .nav-icon{font-size:20px;line-height:1;}
@@ -534,7 +535,7 @@ body{display:flex;flex-direction:column;align-items:center;}
   <div class="diff-list" id="diff-list"></div>
   <button class="start-btn" id="start-btn">START 🚀</button>
   <button class="tuto-link-splash" id="btn-help-splash">? Règles du jeu</button>
-  <div class="bottom-nav" style="margin-top:20px;position:relative;z-index:1;">
+  <div class="bottom-nav" style="margin-top:20px;position:relative;z-index:1;background:transparent;border-top:none;">
     <button class="nav-btn active"><span class="nav-icon">🎮</span><span class="nav-lbl">Jouer</span></button>
     <button class="nav-btn" onclick="openDailyModal()"><span class="nav-icon">⭐</span><span class="nav-lbl">Du jour</span></button>
     <button class="nav-btn" onclick="openDuelModal()"><span class="nav-icon">⚔️</span><span class="nav-lbl">Duel</span></button>
@@ -861,7 +862,12 @@ function updateProfileUI() {
 // ── MODALS ──
 function openModal(id) {
   document.getElementById(id).classList.remove("hidden");
-  if (id === "modal-profile") renderProfileModal();
+  if (id === "modal-profile") {
+    // Afficher le pseudo immédiatement sans attendre le chargement async
+    const titleEl = document.getElementById("profile-title");
+    if (titleEl) titleEl.textContent = userProfile?.pseudo || (currentUser ? "Mon profil" : "Connexion");
+    renderProfileModal();
+  }
 }
 function closeModal(id) {
   document.getElementById(id).classList.add("hidden");
