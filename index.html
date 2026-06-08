@@ -1144,8 +1144,27 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
-  const { data } = await sb.from("profiles").select("*").eq("id", currentUser.id).single();
-  userProfile = data;
+  const { data, error } = await sb.from("profiles").select("*").eq("id", currentUser.id).single();
+  if (data) {
+    userProfile = data;
+    // S'assurer que emoji a une valeur
+    if (!userProfile.emoji) {
+      userProfile.emoji = "🎯";
+      await sb.from("profiles").update({ emoji: "🎯" }).eq("id", currentUser.id);
+    }
+  } else {
+    // Profil manquant — le créer avec des valeurs par défaut
+    const emailBase = currentUser.email.split("@")[0].slice(0,15);
+    const defaultProfile = {
+      id: currentUser.id,
+      pseudo: emailBase,
+      emoji: "🎯",
+      best_score: 0,
+      total_games: 0
+    };
+    const { data: newProfile } = await sb.from("profiles").upsert(defaultProfile).select().single();
+    userProfile = newProfile || defaultProfile;
+  }
 }
 
 function updateProfileUI() {
@@ -1197,9 +1216,11 @@ async function renderProfileModal() {
   document.querySelectorAll(".profile-section-title,.profile-action-btn").forEach(el => el.style.display = "");
 
   // Hero
-  document.getElementById("profile-hero-emoji").textContent = userProfile?.emoji || "👤";
-  document.getElementById("profile-hero-pseudo").textContent = userProfile?.pseudo || "—";
-  document.getElementById("profile-hero-email").textContent = currentUser.email;
+  const heroEmoji  = userProfile?.emoji  || "🎯";
+  const heroPseudo = userProfile?.pseudo || currentUser?.email?.split("@")[0] || "—";
+  document.getElementById("profile-hero-emoji").textContent = heroEmoji;
+  document.getElementById("profile-hero-pseudo").textContent = heroPseudo;
+  document.getElementById("profile-hero-email").textContent = currentUser?.email || "";
 
   // Stats
   const { data: games } = await sb.from("games")
