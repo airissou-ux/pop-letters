@@ -1211,6 +1211,9 @@ function closeModal(id) {
 }
 
 async function renderProfileModal() {
+  // Toujours recharger depuis la base pour avoir les données fraîches
+  if (currentUser) await loadUserProfile();
+
   if (!currentUser) {
     document.getElementById("profile-hero-emoji").textContent = "👤";
     document.getElementById("profile-hero-pseudo").textContent = "Non connecté";
@@ -1370,6 +1373,30 @@ async function saveEditEmoji() {
   document.getElementById("edit-emoji-box").classList.remove("show");
   showToast("Emoji mis à jour !");
   btn.textContent = "Enregistrer";
+}
+
+// ── SAVE GAME ──
+async function saveGame(score, wordList, level) {
+  if (!currentUser) return;
+  const { error } = await sb.from("games").insert({
+    user_id:    currentUser.id,
+    score:      score,
+    word_count: wordList.length,
+    words:      wordList,
+    level:      level,
+    is_daily:   isDailyMode,
+    created_at: new Date().toISOString()
+  });
+  if (error) { console.error("saveGame error:", error); return; }
+  // Mettre à jour best_score si nécessaire
+  if (userProfile && score > (userProfile.best_score || 0)) {
+    await sb.from("profiles").update({ best_score: score }).eq("id", currentUser.id);
+    userProfile.best_score = score;
+  }
+  // Mettre à jour total_games
+  const newTotal = (userProfile?.total_games || 0) + 1;
+  await sb.from("profiles").update({ total_games: newTotal }).eq("id", currentUser.id);
+  if (userProfile) userProfile.total_games = newTotal;
 }
 
 // ── SUPPRESSION COMPTE ──
