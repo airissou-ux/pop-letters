@@ -782,32 +782,32 @@ body{display:flex;flex-direction:column;align-items:center;}
   <div class="tuto-box">
     <div class="tuto-step active" id="tuto-0">
       <div class="tuto-icon" style="display:flex;flex-direction:column;align-items:center;width:100%;">
-        <div style="display:flex;gap:6px;align-items:flex-end;justify-content:center;padding-bottom:4px;margin-bottom:16px;width:100%;">
+        <div style="display:flex;gap:6px;align-items:flex-end;justify-content:center;padding-bottom:4px;margin-bottom:12px;width:100%;">
           <span style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-weight:900;font-size:20px;color:#fff;background:linear-gradient(135deg,#FF4757,#FF6B9D);box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(12px) rotate(-22deg);">P</span>
           <span style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-weight:900;font-size:20px;color:#fff;background:linear-gradient(135deg,#FFB703,#FF8C00);box-shadow:0 4px 12px rgba(0,0,0,.3);">O</span>
           <span style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-weight:900;font-size:20px;color:#fff;background:linear-gradient(135deg,#06D6A0,#00B4D8);box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(12px) rotate(22deg);">P</span>
         </div>
-        <div style="font-family:var(--font-title);font-weight:900;font-size:18px;letter-spacing:.4em;text-align:center;background:linear-gradient(90deg,#FF4757,#FFB703,#06D6A0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">LETTERS</div>
+        <div style="font-family:var(--font-title);font-weight:900;font-size:18px;letter-spacing:.22em;color:#fff;text-align:center;padding-left:.22em;">LETTERS</div>
       </div>
       <div class="tuto-text">Le jeu de mots solo contre la montre.<br>Des lettres apparaissent progressivement sur une grille de <strong>20 cases</strong>. À toi de former des mots avant qu'elle ne soit pleine !</div>
     </div>
     <div class="tuto-step" id="tuto-1">
       <div class="tuto-icon">👆</div>
       <div class="tuto-title">Former un mot</div>
-      <div class="tuto-text">Tape sur les lettres dans l'ordre<br>pour composer ton mot.<br>Le mot doit faire <strong>5 lettres minimum</strong>.<br>Pour retirer la <strong>dernière lettre</strong> sélectionnée, retape dessus. Pour <strong>tout effacer</strong> d'un coup, appuie sur la croix <strong>✕</strong>.<br>Quand ton mot est prêt, appuie sur <strong>VALIDER</strong>.</div>
+      <div class="tuto-text">Tape sur les lettres dans l'ordre<br>pour composer ton mot.<br>Le mot doit faire <strong>5 lettres minimum</strong>.<br>Pour retirer la <strong>dernière lettre</strong>, retape dessus. Pour <strong>tout effacer</strong>, appuie sur <strong>✕</strong>.<br>Quand ton mot est prêt, appuie sur <strong>VALIDER</strong>.</div>
     </div>
     <div class="tuto-step" id="tuto-2">
       <div class="tuto-icon">⏱</div>
       <div class="tuto-title">La pression du temps</div>
-      <div class="tuto-text">Une nouvelle lettre se révèle à intervalle régulier selon le niveau choisi.<br>Si la <strong>grille est pleine</strong>, la partie s'arrête.<br>Tu disposes de <strong>3 vies</strong> : si tu valides un mot que tu as <strong>déjà soumis</strong> dans la même partie, tu perds une vie. À <strong>0 vie</strong>, la partie se termine immédiatement.</div>
+      <div class="tuto-text">Une nouvelle lettre se révèle à intervalle régulier selon le niveau.<br>Si la <strong>grille est pleine</strong>, la partie s'arrête.<br>Tu disposes de <strong>3 vies</strong> : valider un mot <strong>déjà soumis</strong> fait perdre une vie. À <strong>0 vie</strong>, la partie se termine.</div>
     </div>
     <div class="tuto-step" id="tuto-3">
       <div class="tuto-icon">🏆</div>
       <div class="tuto-title">Le score</div>
-      <div class="tuto-text">Chaque lettre vaut <strong>1 point</strong>. Les mots longs rapportent des bonus :<br><strong>6L +1 · 7L +2 · 8L +3 · 9L +5 · 10L+ +10</strong><br><br>Des figures se déclenchent si tu valides au moins un mot de chaque longueur :<br><strong>Quarte</strong> (5+6+7+8L) <strong>+25 pts</strong><br><strong>Quinte</strong> (5+6+7+8+9L) <strong>+50 pts</strong><br><strong>Quinte Flush</strong> (6+7+8+9+10L+) <strong>+75 pts</strong></div>
+      <div class="tuto-text">Chaque lettre vaut <strong>1 point</strong>. Bonus pour les mots longs :<br><strong>6L +1 · 7L +2 · 8L +3 · 9L +5 · 10L+ +10</strong><br><br>Figures si tu couvres plusieurs longueurs :<br><strong>Quarte</strong> (5+6+7+8L) <strong>+25 pts</strong><br><strong>Quinte</strong> (+9L) <strong>+50 pts</strong><br><strong>Quinte Flush</strong> (+10L) <strong>+75 pts</strong></div>
     </div>
     <div class="tuto-step" id="tuto-4">
-      <div class="tuto-icon">💫</div>
+      <div class="tuto-icon">🐌</div>
       <div class="tuto-title">Choisis ton niveau</div>
       <div class="tuto-text">
         🐌 <strong>Slow</strong> — 1 carte / 5s<br>
@@ -815,10 +815,25 @@ body{display:flex;flex-direction:column;align-items:center;}
         🐟 <strong>Sharp</strong> — 1 carte / 3s<br>
         🐎 <strong>Fast</strong> — 1 carte / 2s<br>
         🐦‍🔥 <strong>Insane</strong> — 1 carte / 1s<br><br>
-        Le dictionnaire utilisé est l'<strong>ODS</strong> (dictionnaire officiel du Scrabble français). Bonne chance !
+        Dictionnaire <strong>ODS</strong> — officiel du Scrabble français.
       </div>
     </div>
-    <div class="tuto-dots" id="tuto-dots"></div>
+    <div class="tuto-step" id="tuto-5">
+      <div class="tuto-icon">👤</div>
+      <div class="tuto-title">Ton compte joueur</div>
+      <div class="tuto-text">Crée ton compte avec un <strong>pseudo</strong> et un <strong>emoji</strong> qui te représente.<br>Tes parties sont sauvegardées automatiquement.<br>Retrouve ton <strong>historique</strong>, ton meilleur score et tes statistiques dans ton profil.</div>
+    </div>
+    <div class="tuto-step" id="tuto-6">
+      <div class="tuto-icon">⭐</div>
+      <div class="tuto-title">POP du jour</div>
+      <div class="tuto-text">Chaque jour, <strong>tous les joueurs jouent le même tirage</strong>.<br>Une seule tentative — fais le meilleur score !<br>Consulte le <strong>classement du jour</strong> en temps réel avec les pseudos et emojis des participants.<br>La vitesse s'accélère automatiquement selon ton score.</div>
+    </div>
+    <div class="tuto-step" id="tuto-7">
+      <div class="tuto-icon">⚔️</div>
+      <div class="tuto-title">Duel & Partage</div>
+      <div class="tuto-text"><strong>Mode Duel</strong> — génère un code et défie un ami en temps réel. Vous jouez le même tirage simultanément.<br><br><strong>Partage</strong> — partage ton score sur <strong>WhatsApp</strong>, <strong>X</strong> ou par lien direct après chaque partie.</div>
+    </div>
+        <div class="tuto-dots" id="tuto-dots"></div>
     <div class="tuto-nav">
       <button class="tuto-skip" id="tuto-skip">Passer</button>
       <button class="tuto-next" id="tuto-next">SUIVANT →</button>
@@ -2461,7 +2476,7 @@ if (document.readyState === "loading") {
 
 
 // ── TUTORIEL ──
-const TUTO_STEPS = 5;
+const TUTO_STEPS = 8;
 let tutoStep = 0;
 
 function showTutorial(fromStep) {
