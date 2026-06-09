@@ -1003,22 +1003,47 @@ const gameDetailStore = {}; // stockage temporaire des parties pour le détail
 const _sbScript = document.createElement("script");
 _sbScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
 _sbScript.onload = () => {
-  window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+      storage: window.localStorage
+    }
+  });
   initApp();
 };
 document.head.appendChild(_sbScript);
 
 async function initApp() {
+  // Charger le dictionnaire en parallèle
+  loadDictionary();
+
+  // Écouter les changements de session (connexion, déconnexion, refresh)
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (session?.user && (!currentUser || currentUser.id !== session.user.id)) {
+        currentUser = session.user;
+        await loadUserProfile();
+        updateProfileUI();
+      }
+    } else if (event === "SIGNED_OUT") {
+      currentUser = null;
+      userProfile = null;
+      updateProfileUI();
+    }
+  });
+
+  // Vérifier la session existante au démarrage
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
+  if (session?.user) {
     currentUser = session.user;
     await loadUserProfile();
     updateProfileUI();
     buildSplash();
-    loadDictionary();
+    showScreen("splash");
   } else {
     showScreen("auth");
-    loadDictionary();
   }
 }
 
@@ -1193,25 +1218,29 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 async function loadUserProfile() {
   if (!currentUser) return;
   const { data, error } = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
-  if (error) console.error("loadUserProfile error:", error);
+  if (error) { console.error("loadUserProfile error:", error); return; }
+  
   if (data) {
-    userProfile = data;
-    // Corriger emoji manquant silencieusement
-    if (!userProfile.emoji) {
-      userProfile.emoji = "🎯";
+    // Corriger emoji manquant
+    if (!data.emoji) {
+      data.emoji = "🎯";
       await sb.from("profiles").update({ emoji: "🎯" }).eq("id", currentUser.id);
     }
-    // Nettoyer pseudo invalide (email stocké par erreur)
-    if (userProfile.pseudo && userProfile.pseudo.includes("@")) {
-      userProfile.pseudo = null;
+    // Ignorer les pseudos qui ressemblent à un email (bug historique)
+    if (data.pseudo && data.pseudo.includes("@")) {
+      data.pseudo = null;
       await sb.from("profiles").update({ pseudo: null }).eq("id", currentUser.id);
     }
+    userProfile = data;
+    console.log("Profile loaded:", data.pseudo, data.emoji);
   } else {
-    // Profil manquant — créer un squelette, le joueur choisira son pseudo dans les réglages
+    // Profil absent en base — créer un squelette
+    console.warn("Profile not found, creating skeleton...");
     const skeleton = { id: currentUser.id, emoji: "🎯", best_score: 0, total_games: 0 };
-    const { data: newProfile } = await sb.from("profiles")
+    const { data: created, error: ce } = await sb.from("profiles")
       .upsert(skeleton, { onConflict: "id" }).select().maybeSingle();
-    userProfile = newProfile || skeleton;
+    if (ce) console.error("Skeleton creation error:", ce);
+    userProfile = created || skeleton;
   }
 }
 
@@ -1243,9 +1272,6 @@ function closeModal(id) {
 }
 
 async function renderProfileModal() {
-  // Toujours recharger depuis la base pour avoir les données fraîches
-  if (currentUser) await loadUserProfile();
-
   if (!currentUser) {
     document.getElementById("profile-hero-emoji").textContent = "👤";
     document.getElementById("profile-hero-pseudo").textContent = "Non connecté";
@@ -1266,6 +1292,9 @@ async function renderProfileModal() {
   document.querySelectorAll(".profile-section-title,.profile-action-btn").forEach(el => el.style.display = "");
 
   // Hero
+  // Recharger si pas encore en mémoire
+  if (!userProfile) await loadUserProfile();
+
   const heroEmoji  = userProfile?.emoji  || "🎯";
   const heroPseudo = userProfile?.pseudo || null;
   document.getElementById("profile-hero-emoji").textContent = heroEmoji;
