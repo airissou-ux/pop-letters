@@ -1206,6 +1206,8 @@ async function handleAuth() {
 }
 
 async function handleLogout() {
+  // Nettoyer le cache local
+  if (currentUser) localStorage.removeItem("pl_profile_" + currentUser.id);
   await sb.auth.signOut();
   currentUser = null; userProfile = null;
   updateProfileUI();
@@ -1217,30 +1219,36 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
+
+  // 1. Restaurer immédiatement depuis localStorage (évite le flash "Choisir un pseudo")
+  const cached = localStorage.getItem("pl_profile_" + currentUser.id);
+  if (cached) {
+    try { userProfile = JSON.parse(cached); updateProfileUI(); } catch(e) {}
+  }
+
+  // 2. Charger depuis Supabase pour avoir les données fraîches
   const { data, error } = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
   if (error) { console.error("loadUserProfile error:", error); return; }
-  
+
   if (data) {
-    // Corriger emoji manquant
     if (!data.emoji) {
       data.emoji = "🎯";
       await sb.from("profiles").update({ emoji: "🎯" }).eq("id", currentUser.id);
     }
-    // Ignorer les pseudos qui ressemblent à un email (bug historique)
     if (data.pseudo && data.pseudo.includes("@")) {
       data.pseudo = null;
       await sb.from("profiles").update({ pseudo: null }).eq("id", currentUser.id);
     }
     userProfile = data;
+    // Sauvegarder dans localStorage pour le prochain rechargement
+    localStorage.setItem("pl_profile_" + currentUser.id, JSON.stringify(data));
     console.log("Profile loaded:", data.pseudo, data.emoji);
   } else {
-    // Profil absent en base — créer un squelette
-    console.warn("Profile not found, creating skeleton...");
     const skeleton = { id: currentUser.id, emoji: "🎯", best_score: 0, total_games: 0 };
-    const { data: created, error: ce } = await sb.from("profiles")
+    const { data: created } = await sb.from("profiles")
       .upsert(skeleton, { onConflict: "id" }).select().maybeSingle();
-    if (ce) console.error("Skeleton creation error:", ce);
     userProfile = created || skeleton;
+    localStorage.setItem("pl_profile_" + currentUser.id, JSON.stringify(userProfile));
   }
 }
 
@@ -1408,6 +1416,7 @@ async function saveEditPseudo() {
   const { error } = await sb.from("profiles").update({ pseudo: val }).eq("id", currentUser.id);
   if (error) { showToast("Erreur, réessaie"); btn.textContent="OK"; btn.disabled=false; return; }
   if (userProfile) userProfile.pseudo = val;
+  if (currentUser) localStorage.setItem("pl_profile_" + currentUser.id, JSON.stringify(userProfile));
   document.getElementById("profile-hero-pseudo").textContent = val;
   updateProfileUI();
   document.getElementById("edit-pseudo-box").classList.remove("show");
@@ -1431,6 +1440,7 @@ async function saveEditEmoji() {
   const { error } = await sb.from("profiles").update({ emoji: editEmojiSelected }).eq("id", currentUser.id);
   if (error) { showToast("Erreur, réessaie"); btn.textContent="Enregistrer"; btn.disabled=false; return; }
   if (userProfile) userProfile.emoji = editEmojiSelected;
+  if (currentUser) localStorage.setItem("pl_profile_" + currentUser.id, JSON.stringify(userProfile));
   document.getElementById("profile-hero-emoji").textContent = editEmojiSelected;
   updateProfileUI();
   document.getElementById("edit-emoji-box").classList.remove("show");
