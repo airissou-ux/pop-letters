@@ -966,13 +966,7 @@ body{display:flex;flex-direction:column;align-items:center;}
 </div>
 
 <!-- MODAL DÉTAIL PARTIE -->
-<div class="modal-overlay hidden" id="modal-game-detail">
-  <div class="modal-sheet" style="position:relative;">
-    <div class="modal-handle"></div>
-    <button class="modal-close" onclick="closeModal('modal-game-detail')">✕</button>
-    <div id="game-detail-content"></div>
-  </div>
-</div>
+
 
 <!-- MODAL PARTAGE -->
 <div class="modal-overlay hidden" id="modal-share">
@@ -1082,8 +1076,7 @@ async function handleAuth() {
         {id:currentUser.id, pseudo, emoji:selectedEmoji||"🎯", best_score:0, total_games:0},
         {onConflict:"id"}
       ).select().maybeSingle();
-      if (pe) { alert("Erreur profil: "+pe.message); throw pe; }
-      alert("Profil créé: pseudo="+pd?.pseudo+" emoji="+pd?.emoji);
+      if (pe) throw new Error("Profil non créé: " + pe.message);
       userProfile = pd || {id:currentUser.id, pseudo, emoji:selectedEmoji||"🎯"};
     } else {
       const {data:ld, error:le} = await sb.auth.signInWithPassword({email,password});
@@ -1121,10 +1114,7 @@ function skipAuth() { buildSplash(); showScreen("splash"); }
 async function loadUserProfile() {
   if (!currentUser) return;
   const {data,error} = await sb.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();
-  if (error) {
-    alert("Erreur profil: " + error.message);
-    return;
-  }
+  if (error) { console.error("loadUserProfile:",error.message); return; }
   if (data) {
     userProfile = data;
   } else {
@@ -1269,6 +1259,31 @@ async function saveEditEmoji() {
   document.getElementById("edit-emoji-box").classList.remove("show");
   showToast("Emoji mis à jour !");
   btn.textContent="Enregistrer";
+}
+
+// ── GAME DETAIL ──
+function openGameDetail(key) {
+  const g = gameDetailStore[key];
+  if (!g) { showToast("Détail non disponible"); return; }
+  const d = new Date(g.created_at);
+  const date = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  const legacyIcons = {"Moon":"🌙","Star":"⭐","Comet":"☄️","Nova":"🌟","Supernova":"💫"};
+  const icon = DIFFICULTY.find(d=>d.label===g.level)?.icon || legacyIcons[g.level] || "🎮";
+  const words = g.words || [];
+  const modeTag = g.is_daily ? "⭐ POP du jour" : g.level || "";
+  document.getElementById("game-detail-content").innerHTML = `
+    <div class="detail-header">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">${modeTag} · ${date}</div>
+      <div class="detail-score">${g.score}</div>
+      <div class="detail-meta">${icon} ${g.level||""} · ${g.word_count||0} mot${(g.word_count||0)>1?"s":""} trouvé${(g.word_count||0)>1?"s":""}</div>
+    </div>
+    ${words.length > 0
+      ? `<div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:700;">Mots trouvés</div>
+         <div class="detail-words">${words.map(w=>`<span class="detail-chip">${w}</span>`).join("")}</div>`
+      : `<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px;">Aucun mot enregistré pour cette partie</div>`
+    }`;
+  closeModal("modal-profile");
+  document.getElementById("modal-game-detail").classList.remove("hidden");
 }
 
 // ── SAVE GAME ──
@@ -2352,6 +2367,7 @@ function renderGameOver(reason) {
   const {len, fig, figLabel, qf, q, qa} = calcBonus(wordList);
   const base = wordList.reduce((s,w) => s+w.length, 0);
   const total = base + len + fig;
+  state.score = total; // synchroniser state.score avec le total affiché
   document.getElementById("go-title").textContent = reason==="mistakes" ? "3 FAUTES !" : "GRILLE PLEINE";
   document.getElementById("go-score").textContent = total;
   const d = DIFFICULTY[state.diffIdx];
