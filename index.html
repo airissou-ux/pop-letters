@@ -1132,12 +1132,9 @@ async function loadUserProfile() {
   }
   if (data) {
     userProfile = data;
-    alert("Profil chargé: pseudo=" + data.pseudo + " emoji=" + data.emoji);
   } else {
-    alert("Profil ABSENT en base pour " + currentUser.id);
     const blank = {id:currentUser.id, emoji:"🎯", best_score:0, total_games:0};
-    const {error:ue} = await sb.from("profiles").upsert(blank,{onConflict:"id"});
-    if(ue) alert("Upsert erreur: " + ue.message);
+    await sb.from("profiles").upsert(blank,{onConflict:"id"});
     userProfile = blank;
   }
 }
