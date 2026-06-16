@@ -1521,6 +1521,8 @@ function startDailyInterval() {
   }
   updatePhaseUI();
   state.intervalId = setTimeout(tick, getDailyMs());
+  // Exposer pour redémarrage depuis handleValidate
+  state.restartInterval = () => { state.intervalId = setTimeout(tick, getDailyMs()); };
 }
 
 // ── DUEL ──
@@ -2095,6 +2097,8 @@ function startGame() {
     }
     state.intervalId = setTimeout(runInterval, ms);
   }
+  // Exposer pour permettre le redémarrage depuis handleValidate
+  state.restartInterval = scheduleNext;
 
   function runInterval() {
     if (state.screen !== "game") return;
@@ -2253,11 +2257,12 @@ function handleValidate() {
   if (state.lastCardTimer) {
     clearTimeout(state.lastCardTimer);
     state.lastCardTimer = null;
-    // Relancer le chrono normalement après validation
-    const ms = DIFFICULTY[state.diffIdx].ms;
-    state.intervalId = setTimeout(() => {
-      if (state.screen === "game") scheduleNext ? scheduleNext() : null;
-    }, ms);
+    // Relancer le chrono après l'animation de disparition des cartes (350ms)
+    setTimeout(() => {
+      if (state.screen === "game" && state.restartInterval) {
+        state.restartInterval();
+      }
+    }, 360);
   }
   renderGrid();
   renderWordDisplay();
