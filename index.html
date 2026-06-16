@@ -1,4 +1,27 @@
 <!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  POP LETTERS — Brain Game                                    ║
+  ║  Version : bêta                                              ║
+  ║  Architecture : HTML/JS vanilla · GitHub Pages               ║
+  ║  Backend : Supabase (auth, profiles, games, duels)           ║
+  ║                                                              ║
+  ║  SECTIONS JS :                                               ║
+  ║  1. Configuration (Supabase URL/KEY, constantes)             ║
+  ║  2. État global (currentUser, userProfile, gameState)        ║
+  ║  3. Initialisation & Auth (initApp, handleAuth, profil)      ║
+  ║  4. Fonctions sociales (POP du jour, Duel, Partage)          ║
+  ║  5. Moteur de jeu (startGame, triggerGameOver, validate)     ║
+  ║  6. Rendu UI (renderGrid, renderScore, renderGameOver)       ║
+  ║  7. Splash, Tutoriel & Dictionnaire                          ║
+  ║  8. Event Listeners                                          ║
+  ║                                                              ║
+  ║  TODO avant publication App Store / Google Play :            ║
+  ║  → Séparer en fichiers modulaires (js/, css/)                ║
+  ║  → Passer à un build system (Vite ou Parcel)                 ║
+  ║  → Migrer vers React Native ou Capacitor pour App native     ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -314,8 +337,6 @@ body{display:flex;flex-direction:column;align-items:center;}
 .bottom-bar{display:flex;align-items:center;justify-content:space-between;
   padding:6px 0 0;border-top:1px solid var(--border);margin-top:2px;}
 .diff-indicator{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);font-weight:600;}
-.prog-dots{display:flex;gap:3px;}
-.prog-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s;}
 .prog-dot.on{background:var(--coral);box-shadow:0 0 6px var(--coral);}
 .btn-help{background:var(--surface2);border:1.5px solid var(--border);border-radius:50%;
   color:var(--dim);font-size:12px;font-weight:800;width:28px;height:28px;
@@ -590,33 +611,7 @@ body{display:flex;flex-direction:column;align-items:center;}
 .prog-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s;}
 .prog-dot.on{background:var(--coral);box-shadow:0 0 6px var(--coral);}
 
-/* Édition pseudo */
-.pseudo-edit-wrap{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
-.pseudo-display{font-family:var(--font-title);font-size:22px;font-weight:900;
-  background:linear-gradient(135deg,var(--coral),var(--amber));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;flex:1;}
-.pseudo-edit-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-  color:var(--dim);font-size:12px;padding:6px 10px;cursor:pointer;white-space:nowrap;transition:all .2s;}
-.pseudo-edit-btn:hover{border-color:var(--sky);color:var(--sky);}
-.pseudo-input-wrap{display:none;flex-direction:column;gap:6px;margin-bottom:16px;}
-.pseudo-input-wrap.show{display:flex;}
-.pseudo-input-row{display:flex;gap:8px;}
-.pseudo-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;
-  padding:11px 13px;font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--text);outline:none;transition:border .2s;}
-.pseudo-input:focus{border-color:var(--sky);}
-.pseudo-input.ok{border-color:var(--lime);}
-.pseudo-input.taken{border-color:var(--coral);}
-.pseudo-status{font-size:11px;height:16px;transition:color .2s;}
-.pseudo-status.ok{color:var(--lime);}
-.pseudo-status.taken{color:var(--coral);}
-.pseudo-status.checking{color:var(--dim);}
-.pseudo-save-btn{background:linear-gradient(135deg,var(--lime),var(--sky));border:none;border-radius:10px;
-  color:#fff;font-family:var(--font-title);font-size:15px;font-weight:900;padding:11px 16px;
-  cursor:pointer;white-space:nowrap;transition:all .2s;}
-.pseudo-save-btn:disabled{opacity:.4;cursor:default;}
-
 /* Modal détail partie */
-#modal-game-detail .modal-sheet{max-height:85vh;}
 .detail-header{text-align:center;margin-bottom:16px;}
 .detail-score{font-family:var(--font-title);font-size:56px;font-weight:900;
   background:linear-gradient(135deg,var(--coral),var(--amber),var(--lime));
@@ -626,31 +621,6 @@ body{display:flex;flex-direction:column;align-items:center;}
 .detail-chip{background:var(--surface2);border:1px solid rgba(0,180,216,.25);border-radius:8px;
   font-family:var(--font-letter);font-size:12px;font-weight:800;padding:3px 9px;
   color:var(--sky);text-transform:uppercase;}
-
-/* Édition pseudo */
-.pseudo-edit-wrap{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
-.pseudo-display{font-family:var(--font-title);font-size:22px;font-weight:900;
-  background:linear-gradient(135deg,var(--coral),var(--amber));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;flex:1;}
-.pseudo-edit-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-  color:var(--dim);font-size:12px;padding:6px 10px;cursor:pointer;white-space:nowrap;transition:all .2s;}
-.pseudo-edit-btn:hover{border-color:var(--sky);color:var(--sky);}
-.pseudo-input-wrap{display:none;flex-direction:column;gap:6px;margin-bottom:16px;}
-.pseudo-input-wrap.show{display:flex;}
-.pseudo-input-row{display:flex;gap:8px;}
-.pseudo-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;
-  padding:11px 13px;font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--text);outline:none;transition:border .2s;}
-.pseudo-input:focus{border-color:var(--sky);}
-.pseudo-input.ok{border-color:var(--lime);}
-.pseudo-input.taken{border-color:var(--coral);}
-.pseudo-status{font-size:11px;height:16px;transition:color .2s;}
-.pseudo-status.ok{color:var(--lime);}
-.pseudo-status.taken{color:var(--coral);}
-.pseudo-status.checking{color:var(--dim);}
-.pseudo-save-btn{background:linear-gradient(135deg,var(--lime),var(--sky));border:none;border-radius:10px;
-  color:#fff;font-family:var(--font-title);font-size:15px;font-weight:900;padding:11px 16px;
-  cursor:pointer;white-space:nowrap;transition:all .2s;}
-.pseudo-save-btn:disabled{opacity:.4;cursor:default;}
 
 /* Modal détail partie */
 #modal-game-detail .modal-sheet{max-height:85vh;}
@@ -1103,7 +1073,6 @@ async function handleAuth() {
     buildSplash();
     showScreen("splash");
   } catch(err) {
-    console.error("Auth error:",err);
     const m=err.message||"";
     showAuthError(
       m.includes("Invalid")||m.includes("credentials") ? "Email ou mot de passe incorrect." :
@@ -2131,8 +2100,7 @@ function startGame() {
     scheduleNext();
   }
 
-  // Remplacer l'intervalId par le timeout (on utilise clearTimeout maintenant)
-  scheduleNext();
+    scheduleNext();
 }
 
 // Flip animé : dos → face
@@ -2555,7 +2523,6 @@ function renderTutoStep() {
   }
 }
 
-// listeners gérés par bindListeners()
 document.getElementById("btn-help-splash").addEventListener("click", () => showTutorial(0));
 
 // init via initApp() after Supabase loads
