@@ -1456,12 +1456,13 @@ function startDailyGame() {
 
   state.deck      = dailyDeck;
   state.grid      = Array.from({length:20}, (_, i) => emptyCell(i));
-  state.selection = [];
-  state.wordList  = [];
-  state.score     = 0;
-  state.mistakes  = 0;
-  state.activeTab = 0;
-  state.diffIdx   = 0;
+  state.selection    = [];
+  state.wordList     = [];
+  state.score        = 0;
+  state.mistakes     = 0;
+  state.activeTab    = 0;
+  state.diffIdx      = 0;
+  state.lastCardTimer = null;
 
   const allIdx = shuffle([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]);
   allIdx.slice(0,5).forEach(i => {
@@ -1506,7 +1507,14 @@ function startDailyInterval() {
     flipCard(idx);
     renderProgDots();
     if (state.grid.every(c => c.revealed)) {
-      setTimeout(() => triggerGameOver("grid_full"), getDailyMs());
+      state.lastCardTimer = setTimeout(() => {
+        if (state.grid.every(c => c.revealed || c.gone)) {
+          triggerGameOver("grid_full");
+        } else {
+          state.lastCardTimer = null;
+          state.intervalId = setTimeout(tick, getDailyMs());
+        }
+      }, getDailyMs());
       return;
     }
     state.intervalId = setTimeout(tick, getDailyMs());
@@ -2040,11 +2048,12 @@ function startGame() {
     state.deck = shuffle([...LETTER_POOL]);
   }
   state.grid = Array.from({length:20},(_,i) => emptyCell(i));
-  state.selection = [];
-  state.wordList = [];
-  state.score = 0;
-  state.mistakes = 0;
-  state.activeTab = 0;
+  state.selection     = [];
+  state.wordList      = [];
+  state.score         = 0;
+  state.mistakes      = 0;
+  state.activeTab     = 0;
+  state.lastCardTimer = null;
 
   const allIdx = shuffle([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]);
   const first5 = allIdx.slice(0, 5);
@@ -2089,15 +2098,30 @@ function startGame() {
 
   function runInterval() {
     if (state.screen !== "game") return;
+    if (!state.grid || state.grid.length === 0) return; // guard contre état non initialisé
     const hidden = state.grid.map((c,i) => (!c.revealed ? i : -1)).filter(i => i !== -1);
-    if (hidden.length === 0) { triggerGameOver("grid_full"); return; }
+    if (hidden.length === 0) {
+      // Toutes les cartes révélées — déjà géré par lastCardTimer, ne pas déclencher ici
+      return;
+    }
     const idx = hidden[Math.floor(Math.random() * hidden.length)];
     state.grid[idx].letter = drawLetter();
     state.grid[idx].revealed = true;
     flipCard(idx);
     renderProgDots();
     if (state.grid.every(c => c.revealed)) {
-      setTimeout(() => triggerGameOver("grid_full"), getDailyMs());
+      // Dernière lettre — laisser le temps du niveau avant de terminer
+      // Ce timer est annulable si un mot est validé avant son expiration
+      state.lastCardTimer = setTimeout(() => {
+        // Vérifier si la grille est toujours pleine (aucun mot validé entretemps)
+        if (state.grid.every(c => c.revealed || c.gone)) {
+          triggerGameOver("grid_full");
+        } else {
+          // Un mot a été validé, des cases sont libérées — continuer !
+          state.lastCardTimer = null;
+          scheduleNext();
+        }
+      }, getDailyMs());
       return;
     }
     scheduleNext();
@@ -2144,6 +2168,8 @@ function resetCard(id) {
 
 function triggerGameOver(reason) {
   if (state.intervalId) { clearInterval(state.intervalId); clearTimeout(state.intervalId); }
+  if (state.lastCardTimer) { clearTimeout(state.lastCardTimer); state.lastCardTimer = null; }
+  if (state.screen === "gameover") return; // éviter double déclenchement
   state.screen = "gameover";
   renderGameOver(reason);
   showScreen("gameover");
@@ -2223,6 +2249,16 @@ function handleValidate() {
 
   ids.forEach(id => { state.grid[id].gone = true; state.grid[id].selected = false; state.grid[id].valid = false; });
   state.selection = [];
+  // Mot validé — annuler le timer de fin si on était sur la dernière carte
+  if (state.lastCardTimer) {
+    clearTimeout(state.lastCardTimer);
+    state.lastCardTimer = null;
+    // Relancer le chrono normalement après validation
+    const ms = DIFFICULTY[state.diffIdx].ms;
+    state.intervalId = setTimeout(() => {
+      if (state.screen === "game") scheduleNext ? scheduleNext() : null;
+    }, ms);
+  }
   renderGrid();
   renderWordDisplay();
   renderValidateBtn();
