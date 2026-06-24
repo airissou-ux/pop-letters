@@ -274,7 +274,19 @@ function openGameDetail(key) {
   document.getElementById("modal-game-detail").classList.remove("hidden");
 }
 
-
+// ── SAVE GAME ──
+async function saveGame(score, wordList, level) {
+  if (!currentUser) return;
+  await sb.from("games").insert({
+    user_id: currentUser.id, score, word_count: wordList.length,
+    words: wordList, level, is_daily: isDailyMode,
+    created_at: new Date().toISOString()
+  });
+  if (userProfile && score > (userProfile.best_score||0)) {
+    await sb.from("profiles").update({best_score:score}).eq("id",currentUser.id);
+    userProfile.best_score = score;
+  }
+}
 
 // ── SUPPRESSION COMPTE ──
 function toggleDeleteConfirm() { document.getElementById("delete-confirm").classList.toggle("show"); }
