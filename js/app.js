@@ -1,6 +1,3 @@
-// POP LETTERS — app.js
-// ==================================================
-
 async function loadDictionary() {
   const bar = document.getElementById("load-bar");
   const msg = document.getElementById("load-msg");
@@ -583,3 +580,4 @@ function handleValidate() {
 }
 
 // ── RENDER ──
+
