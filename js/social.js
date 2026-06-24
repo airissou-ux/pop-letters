@@ -338,7 +338,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-const DICT_URL = "https://raw.githubusercontent.com/lorenbrichter/Words/master/Words/fr.txt";
 
 const LETTER_POOL = [
   ...Array(9).fill("A"), ...Array(2).fill("B"), ...Array(2).fill("C"),
