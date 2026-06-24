@@ -20,7 +20,7 @@ const gameDetailStore = {}; // stockage temporaire des parties pour le détail
 window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 document.addEventListener("DOMContentLoaded", initApp);
 
-async function initApp() {
+async async function initApp() {
   loadDictionary();
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
