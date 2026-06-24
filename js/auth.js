@@ -97,7 +97,7 @@ async function handleLogout() {
   showScreen("auth");
 }
 
-function skipAuth() { buildSplash(); showScreen("splash"); }
+async function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
@@ -199,7 +199,7 @@ function toggleEditBox(id) {
 }
 
 // ── EDIT PSEUDO ──
-function checkEditPseudo() {
+async function checkEditPseudo() {
   const input=document.getElementById("edit-pseudo-input");
   const status=document.getElementById("edit-pseudo-status");
   const save=document.getElementById("edit-pseudo-save");
@@ -231,7 +231,7 @@ async function saveEditPseudo() {
 }
 
 // ── EDIT EMOJI ──
-function selectEditEmoji(e) {
+async function selectEditEmoji(e) {
   editEmojiSelected=e;
   document.querySelectorAll("#edit-emoji-pick .emoji-opt").forEach(el=>el.classList.toggle("sel",el.dataset.emoji===e));
   document.getElementById("edit-emoji-save").disabled=(e===userProfile?.emoji);
@@ -289,7 +289,7 @@ async function saveGame(score, wordList, level) {
 }
 
 // ── SUPPRESSION COMPTE ──
-function toggleDeleteConfirm() { document.getElementById("delete-confirm").classList.toggle("show"); }
+async function toggleDeleteConfirm() { document.getElementById("delete-confirm").classList.toggle("show"); }
 async function deleteAccount() {
   if(!currentUser) return;
   const btn=document.querySelector(".btn-delete-confirm"); if(btn){btn.disabled=true;btn.textContent="…";}
