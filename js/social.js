@@ -339,29 +339,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-const LETTER_POOL = [
-  ...Array(9).fill("A"), ...Array(2).fill("B"), ...Array(2).fill("C"),
-  ...Array(3).fill("D"), ...Array(15).fill("E"), ...Array(2).fill("F"),
-  ...Array(2).fill("G"), ...Array(2).fill("H"), ...Array(8).fill("I"),
-  ...Array(1).fill("J"), ...Array(1).fill("K"), ...Array(5).fill("L"),
-  ...Array(3).fill("M"), ...Array(6).fill("N"), ...Array(6).fill("O"),
-  ...Array(2).fill("P"), ...Array(1).fill("Q"), ...Array(6).fill("R"),
-  ...Array(6).fill("S"), ...Array(6).fill("T"), ...Array(6).fill("U"),
-  ...Array(2).fill("V"), ...Array(1).fill("W"), ...Array(1).fill("X"),
-  ...Array(1).fill("Y"), ...Array(1).fill("Z"),
-];
 
-const DIFFICULTY = [
-  { label:"Slow",   icon:"🐌",    ms:5000 },
-  { label:"Cool",   icon:"🐢",    ms:4000 },
-  { label:"Sharp",  icon:"🐟",    ms:3000 },
-  { label:"Fast",   icon:"🐎",    ms:2000 },
-  { label:"Insane", icon:"🐦‍🔥", ms:1000 },
-];
 
 const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
 
-let DICT = new Set();
+
 
 function deaccent(s) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
