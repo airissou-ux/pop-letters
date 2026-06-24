@@ -12,7 +12,7 @@ function getDailySeed() {
   for (let i=0;i<date.length;i++){h=((h<<5)-h)+date.charCodeAt(i);h|=0;}
   return Math.abs(h);
 }
-function seededShuffle(arr, seed) {
+async function seededShuffle(arr, seed) {
   const a=[...arr]; let s=seed;
   for(let i=a.length-1;i>0;i--){
     s=(s*1664525+1013904223)&0xFFFFFFFF;
@@ -213,7 +213,7 @@ function renderDuelHome() {
     </div>`;
 }
 
-function genDuelCode() {
+async function genDuelCode() {
   const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s="";
   for(let i=0;i<6;i++) s+=c[Math.floor(Math.random()*c.length)];
   return s;
@@ -247,7 +247,7 @@ async function createDuel() {
     ).subscribe();
 }
 
-function renderJoinDuel() {
+async function renderJoinDuel() {
   document.getElementById("duel-content").innerHTML = `
     <input class="duel-code-input" id="join-code-input" placeholder="XXXXXX" maxlength="6"/>
     <button class="duel-join-btn" onclick="joinDuel()">REJOINDRE →</button>`;
@@ -266,7 +266,7 @@ async function joinDuel() {
   startDuelGame(data.seed, data.id);
 }
 
-function startDuelGame(seed, id) {
+async function startDuelGame(seed, id) {
   isDuelMode=true; isDailyMode=false; duelId=id;
   state.deck = seededShuffle([...LETTER_POOL], seed);
   startGame();
