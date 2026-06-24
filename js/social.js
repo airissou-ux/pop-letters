@@ -298,7 +298,7 @@ function renderShareModal() {
   const icon  = DIFFICULTY.find(d=>d.label===level)?.icon||"🌙";
   const dateStr = new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
   const modeTag = isDailyMode?"⭐ POP du jour":isDuelMode?"⚔️ Duel":level;
-  const url = "https://airissou-ux.github.io/Firewords_test2/";
+  const url = "https://airissou-ux.github.io/pop-letters/";
 
   document.getElementById("share-preview").innerHTML = `
     <div style="display:flex;gap:5px;justify-content:center;align-items:flex-end;margin-bottom:10px;">
@@ -320,7 +320,7 @@ function renderShareModal() {
 }
 
 function shareNative(encodedText) {
-  if(navigator.share){navigator.share({title:"POP LETTERS",text:decodeURIComponent(encodedText),url:"https://airissou-ux.github.io/Firewords_test2/"});}
+  if(navigator.share){navigator.share({title:"POP LETTERS",text:decodeURIComponent(encodedText),url:"https://airissou-ux.github.io/pop-letters/"});}
   else{navigator.clipboard.writeText(decodeURIComponent(encodedText));showToast("Copié !");}
 }
 
