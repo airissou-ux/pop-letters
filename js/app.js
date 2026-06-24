@@ -1,7 +1,7 @@
 // POP LETTERS — app.js
 // ==================================================
 
-function loadDictionary() {
+async function loadDictionary() {
   const bar = document.getElementById("load-bar");
   const msg = document.getElementById("load-msg");
   try {
