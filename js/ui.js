@@ -1,6 +1,3 @@
-// POP LETTERS — ui.js
-// ==================================================
-
 function renderGame() {
   const d = DIFFICULTY[state.diffIdx];
   document.getElementById("diff-icon").textContent = d.icon;
