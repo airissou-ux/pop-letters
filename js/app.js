@@ -1,7 +1,3 @@
-function deaccent(s) {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
-}
-
 // POP LETTERS — app.js
 // ==================================================
 
@@ -311,6 +307,11 @@ function calcBonus(wordList) {
   return {len, fig, figLabel, qf, q, qa};
 }
 
+let state = {
+  screen:"splash", diffIdx:0, grid:[], selection:[], wordList:[],
+  score:0, mistakes:0, activeTab:0, intervalId:null,
+  toastTimer:null, bonusTimer:null, deck:[],
+};
 
 function showScreen(name) {
   state.screen = name;
