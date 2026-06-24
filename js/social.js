@@ -341,12 +341,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
 
 
 
-function deaccent(s) {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
-}
+
+
 
 async
