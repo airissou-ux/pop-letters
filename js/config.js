@@ -1,6 +1,3 @@
-// POP LETTERS — config.js
-// ==================================================
-
 // ═══════════════════════════════════════════════
 // SUPABASE CONFIG
 // ═══════════════════════════════════════════════
@@ -33,3 +30,6 @@ async function initApp() {
     showScreen("auth");
   }
 }
+
+
+const DICT_URL = "https://raw.githubusercontent.com/lorenbrichter/Words/master/Words/fr.txt";
