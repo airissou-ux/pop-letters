@@ -56,3 +56,5 @@ const DIFFICULTY = [
 ];
 
 let DICT = new Set();
+
+const TAB_LABELS = ["5 L","6 L","7 L","8 L","9 L","10+ L"];
