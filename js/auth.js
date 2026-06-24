@@ -1,6 +1,3 @@
-// POP LETTERS — auth.js
-// ==================================================
-
 // ── AUTH ──
 let authMode = "login";
 let selectedEmoji = "🎯";
@@ -97,7 +94,7 @@ async function handleLogout() {
   showScreen("auth");
 }
 
-async function skipAuth() { buildSplash(); showScreen("splash"); }
+function skipAuth() { buildSplash(); showScreen("splash"); }
 
 async function loadUserProfile() {
   if (!currentUser) return;
@@ -199,7 +196,7 @@ function toggleEditBox(id) {
 }
 
 // ── EDIT PSEUDO ──
-async function checkEditPseudo() {
+function checkEditPseudo() {
   const input=document.getElementById("edit-pseudo-input");
   const status=document.getElementById("edit-pseudo-status");
   const save=document.getElementById("edit-pseudo-save");
@@ -231,7 +228,7 @@ async function saveEditPseudo() {
 }
 
 // ── EDIT EMOJI ──
-async function selectEditEmoji(e) {
+function selectEditEmoji(e) {
   editEmojiSelected=e;
   document.querySelectorAll("#edit-emoji-pick .emoji-opt").forEach(el=>el.classList.toggle("sel",el.dataset.emoji===e));
   document.getElementById("edit-emoji-save").disabled=(e===userProfile?.emoji);
@@ -289,7 +286,7 @@ async function saveGame(score, wordList, level) {
 }
 
 // ── SUPPRESSION COMPTE ──
-async function toggleDeleteConfirm() { document.getElementById("delete-confirm").classList.toggle("show"); }
+function toggleDeleteConfirm() { document.getElementById("delete-confirm").classList.toggle("show"); }
 async function deleteAccount() {
   if(!currentUser) return;
   const btn=document.querySelector(".btn-delete-confirm"); if(btn){btn.disabled=true;btn.textContent="…";}
@@ -302,3 +299,4 @@ async function deleteAccount() {
     showToast("Compte supprimé."); showScreen("auth");
   } catch(e) { showToast("Erreur: "+e.message); if(btn){btn.disabled=false;btn.textContent="Supprimer";} }
 }
+
