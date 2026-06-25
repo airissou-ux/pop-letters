@@ -370,14 +370,24 @@ async function joinAndPlay() {
 
 // ── LANCER LA PARTIE DÉFI ──
 async function launchDuelGame(duelDbId, code, seed, levelIdx) {
+  // Fermer tous les modals
+  document.querySelectorAll(".modal-overlay").forEach(el => el.classList.add("hidden"));
+
   isDuelMode  = true;
   isDailyMode = false;
   duelId      = duelDbId;
 
-  // Forcer le niveau choisi
-  state.diffIdx = levelIdx;
-  state.deck    = seededShuffle([...LETTER_POOL], seed);
+  // Préparer le deck et le niveau AVANT startGame
+  const idx = parseInt(levelIdx) || 0;
+  state.diffIdx = idx;
+  state.deck    = seededShuffle([...LETTER_POOL], parseInt(seed));
+  state.lastCardTimer = null;
+
+  // Lancer la partie
   startGame();
+  // Forcer diffIdx après startGame (qui peut le modifier)
+  state.diffIdx = idx;
+  isDuelMode = true;
 }
 
 // ── SAUVEGARDER LE RÉSULTAT DÉFI ──
