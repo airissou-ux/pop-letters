@@ -481,7 +481,11 @@ function triggerGameOver(reason) {
   const level = DIFFICULTY[state.diffIdx].label;
   lastGameResult = { score: state.score, level, wordCount: state.wordList.length };
   if (typeof saveGame === "function") saveGame(state.score, state.wordList, level);
-  if (typeof saveDuelScore === "function" && isDuelMode) saveDuelScore(state.score);
+  if (isDuelMode && typeof saveDuelScore === "function") {
+    saveDuelScore(state.score, state.wordList).then(() => {
+      if (typeof showDuelResult === "function") showDuelResult();
+    });
+  }
 }
 
 function handleCellClick(id) {
