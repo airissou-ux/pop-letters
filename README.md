@@ -9,23 +9,41 @@ et **duel** en temps réel.
 
 ---
 
-## 🚀 Mettre en place l'environnement (pas à pas)
+## 🚀 Mettre en place l'environnement (pas à pas, macOS)
 
-Ce guide part de zéro — aucune connaissance préalable requise.
+Ce guide est écrit pour **macOS** et part de zéro — aucune connaissance préalable
+requise. Toutes les commandes se tapent dans le **Terminal**.
+
+### 0. Ouvrir le Terminal
+
+C'est l'application où l'on tape les commandes.
+
+- Appuie sur **`Cmd` (⌘) + Espace** (Spotlight), tape **`Terminal`**, puis `Entrée`.
+- Une fenêtre avec du texte s'ouvre : c'est là que tout se passe. Pour exécuter une
+  commande, on la colle puis on appuie sur `Entrée`.
 
 ### 1. Installer Node.js
 
 Node.js est l'outil qui fait tourner le projet sur ton ordinateur.
 
-- Va sur **https://nodejs.org** et installe la version **LTS** (bouton de gauche).
-- Vérifie l'installation en ouvrant un terminal et en tapant :
+- Va sur **https://nodejs.org** et télécharge la version **LTS** (bouton de gauche).
+- Tu obtiens un fichier `.pkg` : double-clique dessus et suis l'installateur (Continuer →
+  Continuer → Installer). C'est l'installation la plus simple, **pas besoin de Homebrew**.
+- Vérifie ensuite, dans le Terminal :
   ```bash
   node --version
   ```
   Tu dois voir un numéro (ex. `v20.x` ou plus). Si oui, c'est bon. Il faut **Node 18 ou
   plus récent**.
 
+> 💡 Sur Mac, **Git** (pour l'étape 2) est généralement déjà présent. Si la première
+> commande `git` affiche une fenêtre proposant d'installer les « outils de développement
+> en ligne de commande » (Command Line Tools), accepte : c'est normal et automatique.
+
 ### 2. Récupérer le code
+
+Par défaut, les commandes ci-dessous téléchargent le projet dans ton dossier personnel
+(`/Users/ton-nom/pop-letters`).
 
 ```bash
 git clone https://github.com/airissou-ux/pop-letters.git

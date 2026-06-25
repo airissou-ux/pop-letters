@@ -49,6 +49,21 @@ Détails complets : **`docs/architecture.md`**.
 
 ## Règles de développement
 
+- **Tenir la documentation à jour (obligatoire).** À chaque développement, vérifier si la
+  doc liée au changement est encore exacte et la mettre à jour **dans le même commit / la
+  même PR**. Aucun changement ne doit laisser la doc périmée. Repères :
+  - règle de jeu / scoring / phases / dictionnaire → `docs/game-logic.md`
+  - structure du code, stores, flux, cycle d'une partie → `docs/architecture.md`
+  - colonnes/tables Supabase, Realtime → `docs/data-model.md`
+  - RLS, clés, XSS, dette de sécurité → `docs/security.md`
+  - scripts, workflow, conventions, nouvelle variable d'env → `docs/development.md`
+  - build, `base` Vite, secrets, déploiement → `docs/deployment.md`
+  - stack, commandes, pièges, liens → ce fichier (`CLAUDE.md`)
+  - install / mise en route → `README.md`
+
+  En fin de tâche, se poser explicitement : « ai-je modifié un comportement, une donnée,
+  une commande ou une dépendance décrits dans un de ces fichiers ? » Si oui, les éditer.
+
 - **Logique métier dans `src/lib/`**, pas dans les composants. Toute logique pure
   (calcul, transformation) doit être testable sans monter un composant.
 - **L'état partagé passe par un store Pinia**, jamais par des variables globales.
