@@ -193,96 +193,319 @@ function startDailyInterval() {
   state.restartInterval = () => { state.intervalId = setTimeout(tick, getDailyMs()); };
 }
 
-// ── DUEL ──
+// ── DUEL / MODE DÉFI ──
+
 function openDuelModal() { openModal("modal-duel"); renderDuelHome(); }
 
 function renderDuelHome() {
   document.getElementById("duel-content").innerHTML = `
     <div class="duel-options">
-      <div class="duel-option" onclick="createDuel()">
-        <div class="duel-option-title">⚔️ Créer un duel</div>
-        <div class="duel-option-desc">Génère un code à partager avec ton adversaire</div>
+      <div class="duel-option" onclick="startCreateDuel()">
+        <div class="duel-option-title">⚔️ Lancer un défi</div>
+        <div class="duel-option-desc">Génère un code et défie un ami — chacun joue à son rythme et son niveau</div>
       </div>
       <div class="duel-option" onclick="renderJoinDuel()">
-        <div class="duel-option-title">🎯 Rejoindre un duel</div>
-        <div class="duel-option-desc">Entre le code reçu de ton adversaire</div>
+        <div class="duel-option-title">🎯 Rejoindre un défi</div>
+        <div class="duel-option-desc">Entre le code reçu pour relever le défi</div>
       </div>
     </div>`;
 }
 
-function genDuelCode() {
-  const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s="";
-  for(let i=0;i<6;i++) s+=c[Math.floor(Math.random()*c.length)];
-  return s;
+// ── CRÉER UN DÉFI (hôte) ──
+function startCreateDuel() {
+  // Choisir le niveau avant de créer
+  const levelOptions = DIFFICULTY.map((d,i) =>
+    `<div class="duel-level-opt" data-idx="${i}" onclick="selectDuelLevel(${i})">
+      <span class="duel-level-icon">${d.icon}</span>
+      <span class="duel-level-name">${d.label}</span>
+      <span class="duel-level-speed">1 carte / ${d.ms/1000}s</span>
+    </div>`
+  ).join("");
+
+  document.getElementById("duel-content").innerHTML = `
+    <div style="font-size:13px;color:var(--dim);margin-bottom:12px;">
+      Choisis ton niveau pour ce défi.<br>
+      <strong style="color:var(--text);">Ton adversaire pourra choisir le sien librement.</strong>
+    </div>
+    <div class="duel-level-list" id="duel-level-list">${levelOptions}</div>
+    <button class="duel-join-btn" id="btn-create-duel" onclick="createDuel()" disabled
+      style="margin-top:14px;opacity:.4;">
+      CRÉER LE DÉFI →
+    </button>`;
+}
+
+let hostLevelIdx = 0;
+
+function selectDuelLevel(idx) {
+  hostLevelIdx = idx;
+  document.querySelectorAll(".duel-level-opt").forEach(el => {
+    el.classList.toggle("sel", parseInt(el.dataset.idx) === idx);
+  });
+  const btn = document.getElementById("btn-create-duel");
+  if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
 }
 
 async function createDuel() {
-  if (!currentUser) { showToast("Connecte-toi pour créer un duel"); return; }
-  const code = genDuelCode();
-  const seed = Math.floor(Math.random()*999999);
-  const pseudo = userProfile?.pseudo||"Anonyme";
-  const {data,error} = await sb.from("duels").insert({
-    code, seed, player1_id:currentUser.id, player1_pseudo:pseudo, status:"waiting",
-    created_at:new Date().toISOString()
+  if (!currentUser) { showToast("Connecte-toi pour créer un défi"); return; }
+  const code    = genDuelCode();
+  const seed    = Math.floor(Math.random() * 999999);
+  const pseudo  = userProfile?.pseudo || "Anonyme";
+  const level   = DIFFICULTY[hostLevelIdx].label;
+  const expires = new Date(Date.now() + 24*60*60*1000).toISOString(); // +24h
+
+  const { data, error } = await sb.from("duels").insert({
+    code, seed,
+    player1_id:     currentUser.id,
+    player1_pseudo: pseudo,
+    player1_level:  level,
+    status:         "waiting",
+    expires_at:     expires,
+    created_at:     new Date().toISOString()
   }).select().single();
-  if (error) { showToast("Erreur création duel"); return; }
+
+  if (error) { showToast("Erreur création défi"); return; }
   duelId = data.id;
 
   document.getElementById("duel-content").innerHTML = `
     <div class="duel-code-display">
-      <div style="font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:.1em;">TON CODE DUEL</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:.1em;">CODE DÉFI</div>
       <div class="duel-code">${code}</div>
-      <div class="duel-code-hint">Partage ce code avec ton adversaire</div>
+      <div class="duel-code-hint">Ton niveau : ${DIFFICULTY[hostLevelIdx].icon} ${level}<br>
+      Valable 24h · Ton adversaire choisit son propre niveau</div>
     </div>
     <button class="duel-join-btn" onclick="shareDuelCode('${code}')">📤 Partager le code</button>
-    <div class="duel-waiting"><div class="duel-waiting-icon">⏳</div>
-    <div class="duel-waiting-text">En attente de l'adversaire…</div></div>`;
-
-  duelChannel = sb.channel("duel:"+data.id)
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"duels",filter:"id=eq."+data.id},
-      p => { if(p.new.status==="ready"){closeModal("modal-duel");startDuelGame(seed,data.id);} }
-    ).subscribe();
+    <button class="duel-join-btn" style="margin-top:8px;background:linear-gradient(135deg,var(--coral),var(--amber));"
+      onclick="closeModal('modal-duel');launchDuelGame(${data.id},'${code}',${seed},${hostLevelIdx})">
+      🚀 JOUER MA PARTIE
+    </button>`;
 }
 
+// ── REJOINDRE UN DÉFI (invité) ──
 function renderJoinDuel() {
   document.getElementById("duel-content").innerHTML = `
-    <input class="duel-code-input" id="join-code-input" placeholder="XXXXXX" maxlength="6"/>
-    <button class="duel-join-btn" onclick="joinDuel()">REJOINDRE →</button>`;
+    <div style="font-size:13px;color:var(--dim);margin-bottom:12px;">Entre le code reçu de ton adversaire</div>
+    <input class="duel-code-input" id="join-code-input" placeholder="XXXXXX" maxlength="6"
+      oninput="this.value=this.value.toUpperCase()"/>
+    <button class="duel-join-btn" style="margin-top:10px;" onclick="lookupDuel()">RECHERCHER →</button>`;
 }
 
-async function joinDuel() {
+async function lookupDuel() {
   const code = (document.getElementById("join-code-input").value||"").trim().toUpperCase();
-  if (code.length<6) { showToast("Code invalide"); return; }
-  const {data,error} = await sb.from("duels").select("*").eq("code",code).eq("status","waiting").single();
-  if (error||!data) { showToast("Code introuvable"); return; }
-  const pseudo = userProfile?.pseudo||"Anonyme";
-  await sb.from("duels").update({
-    player2_id:currentUser?.id||null, player2_pseudo:pseudo, status:"ready"
-  }).eq("id",data.id);
-  closeModal("modal-duel");
-  startDuelGame(data.seed, data.id);
+  if (code.length < 6) { showToast("Code invalide"); return; }
+
+  const { data, error } = await sb.from("duels").select("*").eq("code", code).single();
+  if (error || !data) { showToast("Code introuvable"); return; }
+
+  // Vérifier expiration
+  if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    showToast("Ce défi a expiré (24h dépassées)"); return;
+  }
+
+  // Vérifier que ce n'est pas l'hôte lui-même
+  if (data.player1_id === currentUser?.id) {
+    showToast("Tu es l'hôte de ce défi — partage le code avec ton adversaire");
+    return;
+  }
+
+  // Choisir son niveau
+  const levelOptions = DIFFICULTY.map((d,i) =>
+    `<div class="duel-level-opt" data-idx="${i}" onclick="selectGuestLevel(${i},${data.id},'${data.code}',${data.seed})">
+      <span class="duel-level-icon">${d.icon}</span>
+      <span class="duel-level-name">${d.label}</span>
+      <span class="duel-level-speed">1 carte / ${d.ms/1000}s</span>
+    </div>`
+  ).join("");
+
+  const hostInfo = data.player1_pseudo ? 
+    `Défi lancé par <strong>${data.player1_pseudo}</strong> en niveau ${data.player1_level}` :
+    "Défi trouvé";
+
+  document.getElementById("duel-content").innerHTML = `
+    <div style="font-size:13px;color:var(--amber);margin-bottom:14px;">${hostInfo}</div>
+    <div style="font-size:13px;color:var(--dim);margin-bottom:12px;">
+      Choisis <strong style="color:var(--text);">ton</strong> niveau pour relever ce défi :
+    </div>
+    <div class="duel-level-list" id="duel-level-list">${levelOptions}</div>`;
 }
 
-function startDuelGame(seed, id) {
-  isDuelMode=true; isDailyMode=false; duelId=id;
-  state.deck = seededShuffle([...LETTER_POOL], seed);
+let guestLevelIdx = 0;
+let pendingDuelData = null;
+
+function selectGuestLevel(idx, duelDbId, code, seed) {
+  guestLevelIdx = idx;
+  pendingDuelData = { duelDbId, code, seed };
+  document.querySelectorAll(".duel-level-opt").forEach(el => {
+    el.classList.toggle("sel", parseInt(el.dataset.idx) === idx);
+  });
+
+  // Afficher le bouton de lancement s'il n'existe pas encore
+  if (!document.getElementById("btn-guest-play")) {
+    const btn = document.createElement("button");
+    btn.id = "btn-guest-play";
+    btn.className = "duel-join-btn";
+    btn.style.marginTop = "14px";
+    btn.textContent = "🚀 RELEVER LE DÉFI";
+    btn.onclick = joinAndPlay;
+    document.getElementById("duel-content").appendChild(btn);
+  }
+}
+
+async function joinAndPlay() {
+  if (!pendingDuelData) return;
+  const { duelDbId, seed } = pendingDuelData;
+  const pseudo = userProfile?.pseudo || "Anonyme";
+  const level  = DIFFICULTY[guestLevelIdx].label;
+
+  // Enregistrer le joueur 2
+  await sb.from("duels").update({
+    player2_id:     currentUser?.id || null,
+    player2_pseudo: pseudo,
+    player2_level:  level,
+    status:         "ready"
+  }).eq("id", duelDbId);
+
+  closeModal("modal-duel");
+  launchDuelGame(duelDbId, null, seed, guestLevelIdx);
+}
+
+// ── LANCER LA PARTIE DÉFI ──
+async function launchDuelGame(duelDbId, code, seed, levelIdx) {
+  isDuelMode  = true;
+  isDailyMode = false;
+  duelId      = duelDbId;
+
+  // Forcer le niveau choisi
+  state.diffIdx = levelIdx;
+  state.deck    = seededShuffle([...LETTER_POOL], seed);
   startGame();
 }
 
-async function saveDuelScore(score) {
-  if (!duelId||!currentUser) return;
-  const {data} = await sb.from("duels").select("player1_id").eq("id",duelId).single();
-  const isP1 = data?.player1_id===currentUser.id;
-  await sb.from("duels").update({
-    [isP1?"player1_score":"player2_score"]:score,
-    [isP1?"player1_done":"player2_done"]:true,
-  }).eq("id",duelId);
+// ── SAUVEGARDER LE RÉSULTAT DÉFI ──
+async function saveDuelScore(score, wordList) {
+  if (!duelId || !currentUser) return;
+
+  const { data } = await sb.from("duels").select("player1_id, player1_done, player2_done").eq("id", duelId).single();
+  const isHost  = data?.player1_id === currentUser.id;
+  const level   = DIFFICULTY[state.diffIdx].label;
+
+  // Calcul du détail du score
+  const { len, fig, figLabel } = calcBonus(state.wordList);
+  const base  = state.wordList.reduce((s, w) => s + w.length, 0);
+  const detail = { base, bonusLength: len, bonusFigure: fig, figureLabel: figLabel || null };
+
+  const update = isHost ? {
+    player1_score:        score,
+    player1_words:        wordList,
+    player1_level:        level,
+    player1_score_detail: detail,
+    player1_done:         true,
+    status: data.player2_done ? "done" : "waiting_guest"
+  } : {
+    player2_score:        score,
+    player2_words:        wordList,
+    player2_level:        level,
+    player2_score_detail: detail,
+    player2_done:         true,
+    status: data.player1_done ? "done" : "waiting_host"
+  };
+
+  await sb.from("duels").update(update).eq("id", duelId);
+}
+
+// ── AFFICHER LE RÉSULTAT DÉFI ──
+async function showDuelResult() {
+  if (!duelId) return;
+  const { data } = await sb.from("duels").select("*").eq("id", duelId).single();
+  if (!data) return;
+
+  const isHost   = data.player1_id === currentUser?.id;
+  const myDone   = isHost ? data.player1_done   : data.player2_done;
+  const oppDone  = isHost ? data.player2_done   : data.player1_done;
+  const myPseudo = isHost ? data.player1_pseudo : data.player2_pseudo;
+  const oppPseudo= isHost ? data.player2_pseudo : data.player1_pseudo;
+
+  // Construire le tableau comparatif
+  function playerCol(pseudo, level, score, detail, words, done, isOpponent) {
+    if (!done) {
+      return `<div class="duel-col">
+        <div class="duel-col-header">${pseudo || "Adversaire"}</div>
+        <div class="duel-col-waiting">⏳ En attente<br>de sa partie</div>
+      </div>`;
+    }
+    // Si c'est l'adversaire et que je n'ai pas encore joué → masquer
+    if (isOpponent && !myDone) {
+      return `<div class="duel-col">
+        <div class="duel-col-header">${pseudo}</div>
+        <div class="duel-col-waiting">🔒 Score masqué<br>Joue d'abord !</div>
+      </div>`;
+    }
+    const winner = myDone && oppDone && score > (isHost ? data.player2_score : data.player1_score);
+    const d = detail || {};
+    return `<div class="duel-col${winner && !isOpponent ? " duel-col-win" : ""}">
+      <div class="duel-col-header">${pseudo}${!isOpponent ? " (toi)" : ""}</div>
+      <div class="duel-col-level">${DIFFICULTY.find(x=>x.label===level)?.icon||"🎮"} ${level||""}</div>
+      <div class="duel-col-score">${score} pts</div>
+      <div class="duel-col-detail">
+        <div class="duel-detail-row"><span>Lettres</span><span>${d.base||0} pts</span></div>
+        <div class="duel-detail-row"><span>Bonus longueur</span><span>+${d.bonusLength||0} pts</span></div>
+        ${d.bonusFigure ? `<div class="duel-detail-row"><span>${d.figureLabel||"Figure"}</span><span>+${d.bonusFigure} pts</span></div>` : ""}
+      </div>
+      <div class="duel-col-words">
+        <div class="duel-words-title">${(words||[]).length} mot${(words||[]).length>1?"s":""}</div>
+        <div class="duel-words-list">${(words||[]).map(w=>`<span class="detail-chip">${w}</span>`).join("")}</div>
+      </div>
+    </div>`;
+  }
+
+  const myScore    = isHost ? data.player1_score    : data.player2_score;
+  const oppScore   = isHost ? data.player2_score    : data.player1_score;
+  const myDetail   = isHost ? data.player1_score_detail : data.player2_score_detail;
+  const oppDetail  = isHost ? data.player2_score_detail : data.player1_score_detail;
+  const myWords    = isHost ? data.player1_words    : data.player2_words;
+  const oppWords   = isHost ? data.player2_words    : data.player1_words;
+  const myLevel    = isHost ? data.player1_level    : data.player2_level;
+  const oppLevel   = isHost ? data.player2_level    : data.player1_level;
+
+  // Résultat si les deux ont joué
+  let resultBanner = "";
+  if (myDone && oppDone) {
+    const iWin = myScore > oppScore;
+    const tie  = myScore === oppScore;
+    resultBanner = `<div class="duel-result-banner ${iWin?"win":tie?"tie":"lose"}">
+      ${iWin ? "🏆 Tu gagnes !" : tie ? "🤝 Égalité !" : "💪 "+oppPseudo+" gagne !"}
+    </div>`;
+  }
+
+  document.getElementById("game-detail-content").innerHTML = `
+    <div style="font-family:var(--font-title);font-size:18px;font-weight:900;
+      background:linear-gradient(90deg,var(--coral),var(--amber));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;">
+      ⚔️ Défi
+    </div>
+    ${resultBanner}
+    <div class="duel-result-table">
+      ${playerCol(myPseudo,  myLevel,  myScore,  myDetail,  myWords,  myDone,  false)}
+      ${playerCol(oppPseudo, oppLevel, oppScore, oppDetail, oppWords, oppDone, true)}
+    </div>
+    <button class="duel-join-btn" style="margin-top:16px;" onclick="closeModal('modal-game-detail');openDuelModal()">
+      Nouveau défi
+    </button>`;
+
+  closeModal("modal-profile");
+  document.getElementById("modal-game-detail").classList.remove("hidden");
+}
+
+function genDuelCode() {
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)];
+  return s;
 }
 
 function shareDuelCode(code) {
-  const text = `Je te défie sur POP LETTERS ! Code : ${code} 🎮`;
-  if(navigator.share){navigator.share({title:"POP LETTERS Duel",text});}
-  else{navigator.clipboard.writeText(text);showToast("Code copié !");}
+  const text = `Je te défie sur POP LETTERS ! Code : ${code} 🎮\nTu choisis ton niveau, moi j'ai choisi le mien. Valable 24h !`;
+  if (navigator.share) { navigator.share({ title:"POP LETTERS Défi", text }); }
+  else { navigator.clipboard.writeText(text); showToast("Code copié !"); }
 }
 
 // ── PARTAGE ──
