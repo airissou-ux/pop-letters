@@ -12,6 +12,11 @@ mettre à jour cette valeur.
 Le routeur utilise l'historique **hash** (`#/…`), qui ne nécessite pas de réécriture
 serveur — idéal pour Pages.
 
+Les fichiers du dictionnaire (`public/dict/ods8.txt`, `public/dict/ods9-delta.txt`) sont
+des **assets statiques** : Vite les copie tels quels dans `dist/dict/` et ils sont servis
+sous la `base` (`/pop-letters/dict/…`), chargés en same-origin par l'app — aucune
+dépendance réseau externe au démarrage.
+
 ## Variables d'environnement en CI
 
 Le build a besoin des clés Supabase. Les définir comme **secrets** du dépôt

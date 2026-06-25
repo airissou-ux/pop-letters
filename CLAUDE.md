@@ -97,5 +97,6 @@ Détails complets : **`docs/architecture.md`**.
   n'est pas infalsifiable. Piste : Edge Function de validation. Voir `docs/security.md`.
 - **Suppression de compte** : supprime profil + parties mais **pas** la ligne
   `auth.users` (impossible côté client). Voir `docs/security.md`.
-- Le dictionnaire est téléchargé à chaud depuis GitHub ; repli hors-ligne minimal si le
-  fetch échoue.
+- Le dictionnaire (ODS8 complet + delta ODS9) est **versionné en local** dans
+  `public/dict/` et chargé en same-origin ; repli hors-ligne minimal si le fetch échoue.
+  L'ODS9 a retiré 34 mots non encore supprimés (dette mineure). Voir `docs/game-logic.md`.

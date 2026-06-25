@@ -68,7 +68,10 @@ Supabase, l'isoler derrière une fonction pure ou un mock.
 
 - **Page blanche / erreur Supabase au démarrage** : vérifier que `.env` existe et que les
   clés sont correctes (un message console explicite est émis sinon).
-- **Le dictionnaire ne se charge pas** : le téléchargement GitHub peut échouer (réseau) ;
-  un repli hors-ligne minimal prend le relais. Le jeu reste jouable avec moins de mots.
+- **Le dictionnaire ne se charge pas** : la base (`public/dict/ods8.txt`) et le delta
+  ODS9 (`public/dict/ods9-delta.txt`) sont servis en same-origin ; vérifier qu'ils sont
+  bien présents (et copiés dans `dist/dict/` après `npm run build`). Si le fetch de la
+  base échoue, un repli hors-ligne minimal prend le relais (jeu jouable, moins de mots).
+  Procédure de mise à jour du dico : voir `docs/game-logic.md` § Dictionnaire.
 - **Le mode duel ne démarre pas** : vérifier que la réplication **Realtime** est activée
   sur la table `duels` dans Supabase.

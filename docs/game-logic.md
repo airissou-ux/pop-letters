@@ -68,10 +68,20 @@ Source : `DAILY_PHASES`.
 
 ## Dictionnaire (`src/lib/dictionary.js`)
 
-- Téléchargé à chaud depuis une liste ODS hébergée sur GitHub.
-- Complété par des **listes en dur** (mots en W et K mal couverts) et quelques mots
-  accentués mal normalisés.
-- **Repli hors-ligne** : si le téléchargement échoue, une petite liste de mots courants
-  est chargée pour que le jeu reste jouable.
+- **Source** : deux fichiers versionnés en local dans `public/dict/`, chargés en
+  same-origin au démarrage (`DICT_URL` / `DICT_DELTA_URL` dans `constants.js`,
+  construits avec `import.meta.env.BASE_URL` pour respecter la base GitHub Pages) :
+  - `ods8.txt` — liste **ODS8 complète** (~399 000 formes, filtrées 5–15 lettres,
+    MAJUSCULES ASCII). Couvre déjà les mots en W/K.
+  - `ods9-delta.txt` — **nouveaux mots ODS9** (~374) superposés à l'ODS8, transcrits
+    de la liste officielle FFSC/CRDS, pour une couverture **ODS9 effective**.
+- Le delta est optionnel : si seul son fetch échoue, la base ODS8 reste chargée.
+- **Repli hors-ligne** : si le téléchargement de la base échoue, une petite liste de
+  mots courants (`FALLBACK_WORDS`) est chargée pour que le jeu reste jouable.
 - Normalisation : `deaccent` (majuscules sans accents) ; seuls les mots de 5 à 15 lettres
   `[A-Z]` sont retenus. `checkWord` teste l'appartenance.
+- **Mise à jour** : régénérer `ods8.txt` depuis la source ODS8
+  (`kamilmielnik/scrabble-dictionaries`, `french/ods8.txt`) filtrée 5–15 lettres en
+  majuscules ; compléter `ods9-delta.txt` avec les nouveautés ODS9 absentes de l'ODS8.
+- _Dette connue_ : l'ODS9 a aussi **retiré 34 mots** de l'ODS8 ; ces suppressions ne
+  sont pas encore appliquées (ils restent acceptés). Impact mineur.

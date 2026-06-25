@@ -13,9 +13,14 @@ export const MAX_MISTAKES = 3
 export const MIN_WORD_LEN = 5
 export const MAX_WORD_LEN = 15
 
-/** URL du dictionnaire ODS (liste brute hébergée sur GitHub). */
-export const DICT_URL =
-  'https://raw.githubusercontent.com/lorenbrichter/Words/master/Words/fr.txt'
+/**
+ * Dictionnaire ODS, versionné en local dans `public/dict/` (servi en
+ * same-origin, respecte la base Vite pour GitHub Pages).
+ * - `ods8.txt`       : liste ODS8 complète (5–15 lettres, MAJUSCULES ASCII).
+ * - `ods9-delta.txt` : nouveaux mots ODS9 superposés à l'ODS8.
+ */
+export const DICT_URL = import.meta.env.BASE_URL + 'dict/ods8.txt'
+export const DICT_DELTA_URL = import.meta.env.BASE_URL + 'dict/ods9-delta.txt'
 
 /** Niveaux de difficulté (vitesse de révélation des cartes). */
 export const DIFFICULTY = [
