@@ -27,6 +27,7 @@
 
 html,body{width:100%;min-height:100%;background:var(--bg);font-family:var(--font-ui);color:var(--text);overflow-x:hidden;}
 body{display:flex;flex-direction:column;align-items:center;}
+#app{width:100%;display:flex;flex-direction:column;align-items:center;}
 
 
 /* ── PROFIL COMPLET ── */
