@@ -275,7 +275,7 @@ async function createDuel() {
     </div>
     <button class="duel-join-btn" onclick="shareDuelCode('${code}')">📤 Partager le code</button>
     <button class="duel-join-btn" style="margin-top:8px;background:linear-gradient(135deg,var(--coral),var(--amber));"
-      onclick="closeModal('modal-duel');launchDuelGame(${data.id},'${code}',${seed},${hostLevelIdx})">
+      onclick="closeModal('modal-duel');launchDuelGame('${data.id}','${code}',${seed},${hostLevelIdx})">
       🚀 JOUER MA PARTIE
     </button>`;
 }
